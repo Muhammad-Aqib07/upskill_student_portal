@@ -22,8 +22,8 @@ export async function POST(request: Request) {
       courseName,
       issueDate: String(formData.get("issueDate") ?? "").trim(),
       certificateFeeStatus: String(formData.get("certificateFeeStatus") ?? "unpaid").trim(),
-      adminApproved: String(formData.get("adminApproved") ?? "FALSE").trim() === "TRUE",
-      publicVisible: String(formData.get("publicVisible") ?? "FALSE").trim() === "TRUE",
+      adminApproved: formData.get("adminApproved") === "TRUE",
+      publicVisible: formData.get("publicVisible") === "TRUE",
       createdBy: "admin-panel",
     });
 

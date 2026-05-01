@@ -45,13 +45,13 @@ export function AdminStudentForm() {
   return (
     <form className="grid gap-5 md:grid-cols-2" onSubmit={handleSubmit}>
       {error ? (
-        <div className="md:col-span-2 rounded-[22px] border border-rose-200 bg-rose-50 px-4 py-3 text-sm leading-6 text-rose-700">
+        <div className="md:col-span-2 rounded-[22px] border border-rose-300/20 bg-rose-400/10 px-4 py-3 text-sm leading-6 text-rose-100">
           {error}
         </div>
       ) : null}
 
       {successMessage ? (
-        <div className="md:col-span-2 rounded-[22px] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm leading-6 text-emerald-700">
+        <div className="md:col-span-2 rounded-[22px] border border-emerald-300/20 bg-emerald-400/10 px-4 py-3 text-sm leading-6 text-emerald-100">
           {successMessage}
         </div>
       ) : null}
@@ -193,7 +193,7 @@ export function AdminStudentForm() {
       </div>
 
       <div className="md:col-span-2">
-        <div className="rounded-[22px] border border-sky-200 bg-sky-50 px-4 py-4 text-sm leading-6 text-slate-700">
+        <div className="rounded-[22px] border border-sky-300/20 bg-sky-400/10 px-4 py-4 text-sm leading-6 text-[var(--muted)]">
           Upload images here to store them in Supabase Storage automatically, or
           paste existing public image URLs if the files are already hosted.
         </div>
@@ -211,7 +211,7 @@ export function AdminStudentForm() {
         />
       </div>
 
-      <div className="md:col-span-2 flex flex-col gap-4 sm:flex-row">
+      <div className="md:col-span-2 flex flex-col gap-4 border-t border-white/10 pt-2 sm:flex-row">
         <button className="primary-button" type="submit" disabled={isSubmitting}>
           {isSubmitting ? "Saving student..." : "Save Student From Admin"}
         </button>

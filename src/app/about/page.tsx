@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { INSTITUTE_NAME } from "@/lib/constants";
 import { courses } from "@/lib/portal-data";
 
 const commitments = [
@@ -35,8 +36,8 @@ export default function AboutPage() {
             About The Institute
           </p>
           <h1 className="mt-4 max-w-4xl text-4xl font-semibold tracking-tight lg:text-6xl">
-            Tech Upskill Learn is positioned as a professional digital skills
-            institute with a modern student and verification workflow.
+            {INSTITUTE_NAME} is positioned as a professional digital skills
+            institute with a modern student, admissions, and verification workflow.
           </h1>
           <p className="mt-5 max-w-3xl text-base leading-8 text-slate-300">
             The institute experience is built around structured admissions,
@@ -49,7 +50,10 @@ export default function AboutPage() {
             <Link className="primary-button" href="/student/register">
               Apply for Admission
             </Link>
-            <Link className="secondary-button border-white/10 bg-white/5 text-white" href="/verify">
+            <Link
+              className="secondary-button border-white/10 bg-white/5 text-white"
+              href="/verify"
+            >
               Verification Portal
             </Link>
           </div>
@@ -64,7 +68,7 @@ export default function AboutPage() {
               A stronger presentation for a serious learning environment.
             </h2>
             <p className="mt-4 text-base leading-8 text-slate-600">
-              Tech Upskill Learn is designed to present itself as a proper
+              {INSTITUTE_NAME} is designed to present itself as a proper
               institute, with attention to structured communication, credible
               student workflows, and controlled verification rather than open,
               unfiltered record exposure.

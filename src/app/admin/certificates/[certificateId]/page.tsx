@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PrintButton } from "@/components/print-button";
 import { requireAdminUser } from "@/lib/auth";
+import { INSTITUTE_NAME } from "@/lib/constants";
 import { getCertificateById } from "@/lib/google-sheets";
 
 export const dynamic = "force-dynamic";
@@ -44,7 +45,7 @@ export default async function CertificatePrintPage({
           <div className="flex items-start justify-between gap-5">
             <div>
               <p className="text-sm font-semibold uppercase tracking-[0.3em] text-sky-700">
-                Tech Upskill Learn
+                {INSTITUTE_NAME}
               </p>
               <h2 className="mt-5 font-display text-5xl font-semibold text-slate-950">
                 Professional Certification
@@ -74,10 +75,10 @@ export default async function CertificatePrintPage({
               </span>
             </p>
             <p className="max-w-4xl text-lg leading-9">
-              has successfully completed the training program at Tech Upskill
-              Learn. This certificate has been issued through the administration
-              panel and can be verified publicly when the public visibility rule
-              is enabled.
+              has successfully completed the training program at {INSTITUTE_NAME}.
+              This certificate has been issued through the administration panel
+              and can be verified publicly when the public visibility rule is
+              enabled.
             </p>
           </div>
 

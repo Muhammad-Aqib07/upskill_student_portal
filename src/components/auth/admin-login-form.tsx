@@ -53,7 +53,7 @@ export function AdminLoginForm() {
   return (
     <>
       {error ? (
-        <div className="mb-5 rounded-[22px] border border-rose-200 bg-rose-50 px-4 py-3 text-sm leading-6 text-rose-700">
+        <div className="mb-5 rounded-[22px] border border-rose-300/20 bg-rose-400/10 px-4 py-3 text-sm leading-6 text-rose-100">
           {error}
         </div>
       ) : null}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { INSTITUTE_NAME } from "@/lib/constants";
 
 type EnrollmentOption = {
   enrollmentId: string;
@@ -33,11 +34,12 @@ export function CertificateForm({
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const form = event.currentTarget;
     setError(null);
     setSuccessMessage(null);
     setIsSubmitting(true);
 
-    const formData = new FormData(event.currentTarget);
+    const formData = new FormData(form);
     const response = await fetch("/api/admin/certificates", {
       method: "POST",
       body: formData,
@@ -57,22 +59,22 @@ export function CertificateForm({
     }
 
     setSuccessMessage(
-      `Certificate ${result.certificateCode} created successfully. Open the print view below.`,
+      `Certificate ${result.certificateCode} created successfully. The record is now ready inside ${INSTITUTE_NAME}.`,
     );
-    event.currentTarget.reset();
+    form.reset();
     setSelectedEnrollmentId(enrollments[0]?.enrollmentId ?? "");
   }
 
   return (
     <form className="grid gap-5" onSubmit={handleSubmit}>
       {error ? (
-        <div className="rounded-[22px] border border-rose-200 bg-rose-50 px-4 py-3 text-sm leading-6 text-rose-700">
+        <div className="rounded-[22px] border border-rose-300/20 bg-rose-400/10 px-4 py-3 text-sm leading-6 text-rose-100">
           {error}
         </div>
       ) : null}
 
       {successMessage ? (
-        <div className="rounded-[22px] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm leading-6 text-emerald-700">
+        <div className="rounded-[22px] border border-emerald-300/20 bg-emerald-400/10 px-4 py-3 text-sm leading-6 text-emerald-100">
           {successMessage}
         </div>
       ) : null}
@@ -136,39 +138,49 @@ export function CertificateForm({
             <option value="unpaid">unpaid</option>
           </select>
         </div>
-
-        <div>
-          <label className="field-label" htmlFor="adminApproved">
-            Admin Approved
-          </label>
-          <select
-            className="select-field"
-            id="adminApproved"
-            name="adminApproved"
-            defaultValue="TRUE"
-          >
-            <option value="TRUE">Yes</option>
-            <option value="FALSE">No</option>
-          </select>
-        </div>
-
-        <div>
-          <label className="field-label" htmlFor="publicVisible">
-            Public Verification
-          </label>
-          <select
-            className="select-field"
-            id="publicVisible"
-            name="publicVisible"
-            defaultValue="TRUE"
-          >
-            <option value="TRUE">Visible</option>
-            <option value="FALSE">Hidden</option>
-          </select>
-        </div>
       </div>
 
-      <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-5 text-sm leading-7 text-slate-600">
+      <div className="grid gap-4 md:grid-cols-2">
+        <label className="rounded-[24px] border border-white/10 bg-white/5 px-5 py-4 text-sm text-[var(--foreground)]">
+          <div className="flex items-start gap-3">
+            <input
+              className="mt-1 h-4 w-4 accent-sky-400"
+              id="adminApproved"
+              name="adminApproved"
+              type="checkbox"
+              value="TRUE"
+              defaultChecked
+            />
+            <div>
+              <p className="font-semibold">Admin approved</p>
+              <p className="mt-1 text-[var(--muted)]">
+                Check this when the certificate has been reviewed and approved.
+              </p>
+            </div>
+          </div>
+        </label>
+
+        <label className="rounded-[24px] border border-white/10 bg-white/5 px-5 py-4 text-sm text-[var(--foreground)]">
+          <div className="flex items-start gap-3">
+            <input
+              className="mt-1 h-4 w-4 accent-sky-400"
+              id="publicVisible"
+              name="publicVisible"
+              type="checkbox"
+              value="TRUE"
+              defaultChecked
+            />
+            <div>
+              <p className="font-semibold">Publish to public verification</p>
+              <p className="mt-1 text-[var(--muted)]">
+                Check this box to publish the certificate on the public verification page.
+              </p>
+            </div>
+          </div>
+        </label>
+      </div>
+
+      <div className="rounded-[24px] border border-white/10 bg-white/5 p-5 text-sm leading-7 text-[var(--muted)]">
         {selectedEnrollment ? (
           <div className="grid gap-3 md:grid-cols-2">
             <InfoLine label="Student Name" value={selectedEnrollment.studentName} />
@@ -183,7 +195,7 @@ export function CertificateForm({
         )}
       </div>
 
-      <div className="flex flex-col gap-4 sm:flex-row">
+      <div className="flex flex-col gap-4 border-t border-white/10 pt-2 sm:flex-row">
         <button className="primary-button" type="submit" disabled={isSubmitting}>
           {isSubmitting ? "Generating certificate..." : "Generate Certificate"}
         </button>
@@ -194,11 +206,11 @@ export function CertificateForm({
 
 function InfoLine({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
-      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+    <div className="rounded-2xl border border-white/10 bg-white/6 px-4 py-3">
+      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
         {label}
       </p>
-      <p className="mt-2 font-semibold text-slate-950">{value}</p>
+      <p className="mt-2 font-semibold text-[var(--foreground)]">{value}</p>
     </div>
   );
 }
