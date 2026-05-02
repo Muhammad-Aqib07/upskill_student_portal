@@ -3,7 +3,7 @@ import { INSTITUTE_NAME } from "@/lib/constants";
 import { courses } from "@/lib/portal-data";
 
 const highlights = [
-  { value: "08", label: "Career tracks built for practical income skills" },
+  { value: "09", label: "Career tracks built for practical income skills" },
   { value: "24/7", label: "Digital access across admission, login, and verification" },
   { value: "Verified", label: "Controlled certificate lookup with identity matching" },
 ];

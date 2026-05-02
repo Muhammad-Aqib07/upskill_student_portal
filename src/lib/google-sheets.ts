@@ -513,30 +513,10 @@ export async function getStudentDashboardData({
 }) {
   const student = await findStudentByAuthIdOrEmail({ authUserId, email });
   if (!student) {
-    const students = await listStudents();
-    const fallbackStudent = students.at(-1) ?? null;
-
-    if (!fallbackStudent) {
-      return {
-        student: null,
-        enrollments: [] as EnrollmentRecord[],
-        certificates: [] as CertificateRecord[],
-      };
-    }
-
-    const [enrollments, certificates] = await Promise.all([
-      listEnrollments(),
-      listCertificates(),
-    ]);
-
     return {
-      student: fallbackStudent,
-      enrollments: enrollments.filter(
-        (enrollment) => enrollment.student_id === fallbackStudent.student_id,
-      ),
-      certificates: certificates.filter(
-        (certificate) => certificate.student_id === fallbackStudent.student_id,
-      ),
+      student: null,
+      enrollments: [] as EnrollmentRecord[],
+      certificates: [] as CertificateRecord[],
     };
   }
 
@@ -908,4 +888,22 @@ export async function toggleCertificateApproval(certificateId: string) {
 
   await updateRow(SHEET_TABS.certificates, rowIndex, row);
   return newValue;
+}
+
+export async function updateStudentProfile(studentId: string, updates: Partial<StudentRecord>) {
+  await ensurePortalSheetsSetup();
+  const rows = await getRows(SHEET_TABS.students);
+  const rowIndex = rows.findIndex((row) => row[0] === studentId);
+  if (rowIndex === -1) throw new Error("Student not found");
+
+  const row = [...rows[rowIndex]];
+  STUDENT_HEADERS.forEach((header, index) => {
+    const key = header as keyof StudentRecord;
+    if (updates[key] !== undefined) {
+      row[index] = updates[key]!;
+    }
+  });
+
+  await updateRow(SHEET_TABS.students, rowIndex, row);
+  return mapRowsToObjects(STUDENT_HEADERS, [row])[0];
 }

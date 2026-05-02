@@ -15,6 +15,11 @@ export async function middleware(request: NextRequest) {
 
     const pathname = request.nextUrl.pathname;
 
+    // Skip middleware logic for auth callback and public pages
+    if (pathname.startsWith("/auth/callback") || pathname === "/") {
+      return response;
+    }
+
     const isStudentProtected =
       pathname.startsWith("/student/dashboard") || pathname.startsWith("/student/profile");
     const isAdminProtected =

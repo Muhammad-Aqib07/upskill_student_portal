@@ -41,21 +41,12 @@ export default async function StudentDashboardPage() {
                 Welcome back, {user.user_metadata.full_name ?? user.email ?? "Student"}
               </h1>
               <p className="section-copy mt-4 max-w-3xl text-base">
-                Your courses, admission profile, and certificate readiness are
-                now presented in a cleaner dashboard built for faster scanning
-                across mobile and desktop.
+                Manage your academic journey, track course progress, and access 
+                your digital certifications in one secure, unified space.
               </p>
             </div>
 
-            <div className="flex flex-col gap-3 sm:flex-row xl:flex-col">
-              <Link className="secondary-button w-fit" href="/student/certificates">
-                My Certificates &amp; Letters
-              </Link>
-              <Link className="secondary-button w-fit" href="/verify">
-                Public Verification
-              </Link>
-              <LogoutButton redirectTo="/student/login" />
-            </div>
+  
           </div>
 
           <div className="mt-8 grid gap-4 md:grid-cols-3">

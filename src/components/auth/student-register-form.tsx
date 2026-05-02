@@ -41,6 +41,18 @@ export function StudentRegisterForm({ userEmail, authUserId }: StudentRegisterFo
       return;
     }
 
+    // Set the password in Supabase Auth
+    const password = formData.get("accountPassword") as string;
+    if (password) {
+      const { createSupabaseBrowserClient } = await import("@/lib/supabase/client");
+      const supabase = createSupabaseBrowserClient();
+      const { error: passwordError } = await supabase.auth.updateUser({ password });
+      
+      if (passwordError) {
+        console.error("Failed to set password:", passwordError.message);
+      }
+    }
+
     form.reset();
     setSuccessMessage(
       [
@@ -116,6 +128,21 @@ export function StudentRegisterForm({ userEmail, authUserId }: StudentRegisterFo
           )}
         </div>
       ))}
+
+      <div>
+        <label className="field-label" htmlFor="accountPassword">
+          Set Account Password
+        </label>
+        <input
+          className="input-field"
+          id="accountPassword"
+          name="accountPassword"
+          type="password"
+          placeholder="Create a login password"
+          minLength={6}
+          required
+        />
+      </div>
 
       <div>
         <label className="field-label" htmlFor="courseMode">

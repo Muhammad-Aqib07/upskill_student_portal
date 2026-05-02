@@ -46,7 +46,7 @@ export default async function StudentCertificatePrintPage({
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Great+Vibes&family=Playfair+Display:wght@400;700&family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Great+Vibes&family=Cinzel:wght@400;700&family=Playfair+Display:wght@400;700&family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap');
 
         @media print {
           @page { size: landscape; margin: 0mm; }
@@ -118,8 +118,9 @@ export default async function StudentCertificatePrintPage({
         }
         .cert-recipient-label { font-size: 17px; color: #59708f; font-weight: 400; margin-bottom: 16px; }
         .cert-recipient-name {
-          font-family: 'Great Vibes', cursive; font-size: 70px; color: #001f54;
-          margin-bottom: 0px; line-height: 1.1;
+          font-family: 'Cinzel', serif; font-size: 64px; color: #001f54;
+          margin-bottom: 12px; line-height: 1.1; font-weight: 700;
+          letter-spacing: 0.05em; text-transform: uppercase;
         }
         .cert-father-name {
           font-size: 17px;

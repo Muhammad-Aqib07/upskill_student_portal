@@ -10,6 +10,7 @@ type StudentRegistrationField = {
 export const courses = [
   "Trading",
   "Web Development",
+  "Frontend Web Development",
   "Graphic Designing",
   "AI Prompt Engineering",
   "YouTube Automation",
