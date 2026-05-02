@@ -44,11 +44,10 @@ export default async function StudentLoginPage({
 
         <section className="glass-card rounded-[36px] p-8 lg:p-10">
           <div className="mb-8">
-            <p className="section-kicker">Login</p>
+            <p className="section-kicker">Login & Sign Up</p>
             <h2 className="mt-3 text-3xl font-semibold tracking-tight">Student access</h2>
             <p className="section-copy mt-3 text-sm">
-              Authentication stays exactly the same, but the sign-in surface is
-              now easier to scan and better on mobile.
+              Sign in or create a new account to proceed to your student dashboard or complete your admission form.
             </p>
           </div>
 
@@ -56,12 +55,6 @@ export default async function StudentLoginPage({
           <StudentLoginForm />
 
           <div className="mt-8 flex flex-col gap-3 text-sm text-[var(--muted)]">
-            <p>
-              New student?{" "}
-              <Link className="font-semibold text-sky-300" href="/student/register">
-                Complete your registration form
-              </Link>
-            </p>
             <p>
               Already signed in?{" "}
               <Link className="font-semibold text-sky-300" href="/student/dashboard">

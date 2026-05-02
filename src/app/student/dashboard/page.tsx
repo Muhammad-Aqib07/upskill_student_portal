@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { requireStudentUser } from "@/lib/auth";
 import { courses } from "@/lib/portal-data";
@@ -14,33 +15,7 @@ export default async function StudentDashboardPage() {
   });
 
   if (!data.student) {
-    return (
-      <main className="panel-shell">
-        <div className="mx-auto max-w-5xl px-6 py-16 lg:px-10">
-          <div className="premium-card rounded-[36px] p-8 lg:p-10">
-            <div className="brand-badge w-fit">
-              <span className="brand-orb" />
-              Student dashboard
-            </div>
-            <h1 className="mt-5 text-4xl font-semibold tracking-[-0.04em]">
-              Your account is active, but your admission record is not in the
-              institute database yet.
-            </h1>
-            <p className="section-copy mt-4 max-w-2xl text-base">
-              Complete registration once so your profile, enrollment history,
-              and certificate workflow can appear in the upgraded student
-              portal.
-            </p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Link className="primary-button w-fit" href="/student/register">
-                Complete Registration
-              </Link>
-              <LogoutButton redirectTo="/student/login" />
-            </div>
-          </div>
-        </div>
-      </main>
-    );
+    redirect("/student/register");
   }
 
   const activeCourses = data.enrollments.filter(

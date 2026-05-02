@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { VerificationSearchForm } from "@/app/verify/verification-search-form";
 import { INSTITUTE_NAME } from "@/lib/constants";
 import { findVerificationRecord } from "@/lib/google-sheets";
@@ -7,13 +8,13 @@ export const dynamic = "force-dynamic";
 export default async function VerifyPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; fullName?: string; fatherName?: string }>;
+  searchParams: Promise<{ q?: string }>;
 }) {
-  const { q = "", fullName = "", fatherName = "" } = await searchParams;
-  const attemptedLookup = Boolean(q || fullName || fatherName);
-  const hasCompleteInput = Boolean(q.trim() && fullName.trim() && fatherName.trim());
+  const { q = "" } = await searchParams;
+  const attemptedLookup = Boolean(q);
+  const hasCompleteInput = Boolean(q.trim());
   const result = hasCompleteInput
-    ? await findVerificationRecord({ query: q, fullName, fatherName })
+    ? await findVerificationRecord({ query: q })
     : null;
 
   return (
@@ -38,8 +39,7 @@ export default async function VerifyPage({
 
             <div className="mt-10 grid gap-3">
               {[
-                "Identity-based lookup for stronger privacy",
-                "Certificate or registration number supported",
+                "Certificate, Registration, or CNIC number supported",
                 "Approved and paid records only",
                 "Faster scanning and cleaner result presentation",
               ].map((item) => (
@@ -65,11 +65,7 @@ export default async function VerifyPage({
               </p>
             </div>
 
-            <VerificationSearchForm
-              query={q}
-              fullName={fullName}
-              fatherName={fatherName}
-            />
+            <VerificationSearchForm query={q} />
 
             <div className="mt-10 rounded-[28px] border border-white/10 bg-white/5 p-6">
               <h2 className="text-xl font-semibold text-[var(--foreground)]">
@@ -77,8 +73,8 @@ export default async function VerifyPage({
               </h2>
               {attemptedLookup && !hasCompleteInput ? (
                 <div className="mt-5 rounded-2xl border border-amber-300/20 bg-amber-400/10 px-4 py-4 text-sm leading-7 text-amber-100">
-                  Enter the certificate ID or registration number, student full
-                  name, and father name to verify a student record.
+                  Enter the certificate ID, registration number, or CNIC number to
+                  verify a student record.
                 </div>
               ) : null}
 
@@ -90,15 +86,34 @@ export default async function VerifyPage({
               ) : null}
 
               {result ? (
-                <div className="mt-5 grid gap-4 md:grid-cols-2">
-                  <RecordItem label="Student Name" value={result.student_name} />
-                  <RecordItem label="Father Name" value={result.father_name || "N/A"} />
-                  <RecordItem label="Course Name" value={result.course_name} />
-                  <RecordItem label="Institute Name" value={INSTITUTE_NAME} />
-                  <RecordItem label="Issue Date" value={result.issue_date} />
-                  <RecordItem label="Certificate Status" value="Verified" />
-                  <RecordItem label="Certificate ID" value={result.certificate_code} />
-                </div>
+                <>
+                  <div className="mt-5 grid gap-4 md:grid-cols-2">
+                    <RecordItem label="Student Name" value={result.student_name} />
+                    <RecordItem label="Father Name" value={result.father_name || "N/A"} />
+                    <RecordItem label="Course Name" value={result.course_name} />
+                    <RecordItem label="Institute Name" value={INSTITUTE_NAME} />
+                    <RecordItem label="Issue Date" value={result.issue_date} />
+                    <RecordItem label="Certificate Status" value="Verified" />
+                    <RecordItem label="Certificate ID" value={result.certificate_code} />
+                  </div>
+                  
+                  <div className="mt-6 flex flex-col gap-4 sm:flex-row">
+                    <Link
+                      className="primary-button text-center sm:w-fit"
+                      href={`/verify/${result.certificate_id}/print`}
+                      target="_blank"
+                    >
+                      Print Certificate
+                    </Link>
+                    <Link
+                      className="secondary-button text-center sm:w-fit"
+                      href={`/verify/${result.certificate_id}/letter`}
+                      target="_blank"
+                    >
+                      Print Completion Letter
+                    </Link>
+                  </div>
+                </>
               ) : (
                 <div className="mt-5 grid gap-4 md:grid-cols-2">
                   <RecordItem label="Student Name" value="Visible after identity match" />

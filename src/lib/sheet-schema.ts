@@ -29,6 +29,7 @@ export const STUDENT_HEADERS = [
 export const ENROLLMENT_HEADERS = [
   "enrollment_id",
   "student_id",
+  "registration_no",
   "course_id",
   "course_name",
   "enrollment_date",

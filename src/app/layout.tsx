@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans, Playfair_Display } from "next/font/google";
+import { Plus_Jakarta_Sans, Playfair_Display, Great_Vibes } from "next/font/google";
 import { INSTITUTE_NAME, SITE_URL } from "@/lib/constants";
 import "./globals.css";
 
@@ -10,6 +10,12 @@ const jakarta = Plus_Jakarta_Sans({
 
 const playfair = Playfair_Display({
   variable: "--font-playfair",
+  subsets: ["latin"],
+});
+
+const greatVibes = Great_Vibes({
+  weight: "400",
+  variable: "--font-great-vibes",
   subsets: ["latin"],
 });
 
@@ -48,7 +54,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${jakarta.variable} ${playfair.variable}`}
+      className={`${jakarta.variable} ${playfair.variable} ${greatVibes.variable}`}
       data-scroll-behavior="smooth"
     >
       <body>{children}</body>

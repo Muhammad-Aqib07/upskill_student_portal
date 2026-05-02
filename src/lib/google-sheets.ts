@@ -205,6 +205,23 @@ async function appendRow(tabName: TabName, row: string[]) {
   invalidateTabCache(tabName);
 }
 
+async function updateRow(tabName: TabName, rowIndex: number, row: string[]) {
+  const sheets = getGoogleSheetsClient();
+  const spreadsheetId = requireSheetId();
+  const sheetRowNumber = rowIndex + 1;
+
+  await sheets.spreadsheets.values.update({
+    spreadsheetId,
+    range: `${tabName}!A${sheetRowNumber}`,
+    valueInputOption: "USER_ENTERED",
+    requestBody: {
+      values: [row],
+    },
+  });
+
+  invalidateTabCache(tabName);
+}
+
 function buildRegistrationNumber(rowCount: number) {
   return `TUL-REG-${String(rowCount + 1).padStart(5, "0")}`;
 }
@@ -378,9 +395,13 @@ export async function createStudentRegistration(input: {
     STUDENT_HEADERS.map((header) => studentRow[header]),
   );
 
+  const enrollmentsRaw = await getRows(SHEET_TABS.enrollments);
+  const enrollmentRegNo = buildRegistrationNumber(enrollmentsRaw.length - 1);
+
   const enrollmentRow: EnrollmentRecord = {
     enrollment_id: randomUUID(),
     student_id: studentId,
+    registration_no: enrollmentRegNo,
     course_id: `COURSE-${input.selectedCourse.replaceAll(" ", "-").toUpperCase()}`,
     course_name: input.selectedCourse,
     enrollment_date: createdAt,
@@ -455,9 +476,13 @@ export async function createAdminStudent(input: {
     );
   }
 
+  const enrollmentsRaw = await getRows(SHEET_TABS.enrollments);
+  const enrollmentRegNo = buildRegistrationNumber(enrollmentsRaw.length - 1);
+
   const enrollmentRow: EnrollmentRecord = {
     enrollment_id: randomUUID(),
     student_id: studentId,
+    registration_no: enrollmentRegNo,
     course_id: `COURSE-${input.selectedCourse.replaceAll(" ", "-").toUpperCase()}`,
     course_name: input.selectedCourse,
     enrollment_date: createdAt,
@@ -630,20 +655,27 @@ export async function getCertificateWorkspace() {
       .reverse()
       .map((certificate) => {
         const student = students.find((item) => item.student_id === certificate.student_id);
+        const enrollment = enrollments.find((item) => item.enrollment_id === certificate.enrollment_id);
+        
         return {
           ...certificate,
           student_name: student?.full_name ?? "Unknown Student",
           father_name: student?.father_name ?? "",
-          registration_no: student?.registration_no ?? "",
+          registration_no: enrollment?.registration_no || student?.registration_no || "",
+          cnic_bform: student?.cnic_bform ?? "",
         };
       }),
   };
 }
 
+
 export async function createCertificateRecord(input: {
   studentId: string;
   enrollmentId: string;
   courseName: string;
+  studentName?: string;
+  fatherName?: string;
+  enrollmentStatus?: string;
   issueDate: string;
   certificateFeeStatus: string;
   adminApproved: boolean;
@@ -652,18 +684,50 @@ export async function createCertificateRecord(input: {
 }) {
   await ensurePortalSheetsSetup();
 
-  const [student, enrollment, certificates] = await Promise.all([
-    findStudentById(input.studentId),
-    findEnrollmentById(input.enrollmentId),
+  const [studentsRaw, enrollmentsRaw, certificates] = await Promise.all([
+    getRows(SHEET_TABS.students),
+    getRows(SHEET_TABS.enrollments),
     listCertificates(),
   ]);
 
-  if (!student) {
+  const students = mapRowsToObjects(STUDENT_HEADERS, studentsRaw.slice(1));
+  const enrollments = mapRowsToObjects(ENROLLMENT_HEADERS, enrollmentsRaw.slice(1));
+
+  const studentIndex = students.findIndex((s) => s.student_id === input.studentId);
+  const enrollmentIndex = enrollments.findIndex((e) => e.enrollment_id === input.enrollmentId);
+
+  if (studentIndex === -1) {
     throw new Error("Selected student could not be found.");
   }
 
-  if (!enrollment) {
+  if (enrollmentIndex === -1) {
     throw new Error("Selected enrollment could not be found.");
+  }
+
+  // Update Student details if provided
+  if (input.studentName || input.fatherName) {
+    const studentRow = { ...students[studentIndex] };
+    if (input.studentName) studentRow.full_name = input.studentName;
+    if (input.fatherName) studentRow.father_name = input.fatherName;
+    
+    await updateRow(
+      SHEET_TABS.students,
+      studentIndex + 1, // +1 because rows are 0-indexed and the first row is header
+      STUDENT_HEADERS.map((h) => studentRow[h])
+    );
+  }
+
+  // Update Enrollment details if provided
+  if (input.enrollmentStatus || input.courseName) {
+    const enrollmentRow = { ...enrollments[enrollmentIndex] };
+    if (input.enrollmentStatus) enrollmentRow.status = input.enrollmentStatus;
+    if (input.courseName) enrollmentRow.course_name = input.courseName;
+    
+    await updateRow(
+      SHEET_TABS.enrollments,
+      enrollmentIndex + 1,
+      ENROLLMENT_HEADERS.map((h) => enrollmentRow[h])
+    );
   }
 
   const existingCertificate = certificates.find(
@@ -735,21 +799,14 @@ function normalizeVerificationValue(value: string) {
 
 export async function findVerificationRecord(input: {
   query: string;
-  fullName: string;
-  fatherName: string;
 }) {
   const trimmedQuery = normalizeVerificationValue(input.query);
-  const fullName = normalizeVerificationValue(input.fullName);
-  const fatherName = normalizeVerificationValue(input.fatherName);
 
-  if (!trimmedQuery || !fullName || !fatherName) {
+  if (!trimmedQuery) {
     return null;
   }
 
   const workspace = await getCertificateWorkspace();
-  const matchesStudentIdentity = (studentName: string, studentFatherName: string) =>
-    normalizeVerificationValue(studentName) === fullName &&
-    normalizeVerificationValue(studentFatherName) === fatherName;
 
   const byCertificate = workspace.certificates.find((certificate) => {
     const isPublic = certificate.public_visible.toLowerCase() === "true";
@@ -760,8 +817,11 @@ export async function findVerificationRecord(input: {
       isPublic &&
       isApproved &&
       isPaid &&
-      normalizeVerificationValue(certificate.certificate_code) === trimmedQuery &&
-      matchesStudentIdentity(certificate.student_name, certificate.father_name)
+      (
+        normalizeVerificationValue(certificate.certificate_code) === trimmedQuery ||
+        normalizeVerificationValue(certificate.registration_no) === trimmedQuery ||
+        normalizeVerificationValue(certificate.cnic_bform) === trimmedQuery
+      )
     );
   });
 
@@ -771,8 +831,8 @@ export async function findVerificationRecord(input: {
 
   const student = workspace.students.find(
     (item) =>
-      normalizeVerificationValue(item.registration_no) === trimmedQuery &&
-      matchesStudentIdentity(item.full_name, item.father_name),
+      normalizeVerificationValue(item.registration_no) === trimmedQuery ||
+      normalizeVerificationValue(item.cnic_bform) === trimmedQuery
   );
 
   if (!student) {
@@ -794,4 +854,22 @@ export async function findVerificationRecord(input: {
 
 export async function initializeSheetsForPortal() {
   await ensurePortalSheetsSetup();
+}
+
+export async function toggleCertificateVisibility(certificateId: string) {
+  await ensurePortalSheetsSetup();
+  const rows = await getRows(SHEET_TABS.certificates);
+  
+  const rowIndex = rows.findIndex((row) => row[0] === certificateId);
+  if (rowIndex === -1) return null;
+
+  const row = [...rows[rowIndex]];
+  const publicVisibleIndex = CERTIFICATE_HEADERS.indexOf("public_visible");
+  
+  const currentValue = row[publicVisibleIndex]?.toUpperCase() === "TRUE";
+  const newValue = !currentValue;
+  row[publicVisibleIndex] = newValue ? "TRUE" : "FALSE";
+
+  await updateRow(SHEET_TABS.certificates, rowIndex, row);
+  return newValue;
 }

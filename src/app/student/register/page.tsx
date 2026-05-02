@@ -1,8 +1,20 @@
-import Link from "next/link";
+import { redirect } from "next/navigation";
 import { StudentRegisterForm } from "@/components/auth/student-register-form";
 import { INSTITUTE_NAME } from "@/lib/constants";
+import { requireStudentUser } from "@/lib/auth";
+import { getStudentDashboardData } from "@/lib/google-sheets";
 
-export default function StudentRegisterPage() {
+export default async function StudentRegisterPage() {
+  const user = await requireStudentUser();
+  const data = await getStudentDashboardData({
+    authUserId: user.id,
+    email: user.email,
+  });
+
+  if (data.student) {
+    redirect("/student/dashboard");
+  }
+
   return (
     <main className="panel-shell">
       <div className="mx-auto max-w-7xl px-6 py-8 lg:px-10 lg:py-10">
@@ -13,7 +25,7 @@ export default function StudentRegisterPage() {
               Admission form
             </div>
             <h1 className="mt-5 text-4xl font-semibold tracking-[-0.04em] lg:text-5xl">
-              Create your student account through a polished, premium
+              Complete your admission profile through a polished, premium
               registration experience.
             </h1>
             <p className="section-copy mt-5 text-base">
@@ -24,7 +36,6 @@ export default function StudentRegisterPage() {
 
             <div className="mt-10 grid gap-3">
               {[
-                "Create student portal access",
                 "Store admission details in the institute database",
                 "Upload profile images for record keeping",
                 "Begin the certificate workflow from a verified profile",
@@ -46,19 +57,13 @@ export default function StudentRegisterPage() {
                 Admissions for {INSTITUTE_NAME}
               </h2>
               <p className="section-copy mt-4 text-sm">
-                Fill out the form below to create your account and save your
-                student record. No workflow logic has been changed.
+                Fill out the form below to save your
+                student record.
               </p>
             </div>
 
-            <StudentRegisterForm />
+            <StudentRegisterForm userEmail={user.email ?? ""} authUserId={user.id} />
 
-            <div className="mt-8 text-sm text-[var(--muted)]">
-              Already have an account?{" "}
-              <Link className="font-semibold text-sky-300" href="/student/login">
-                Open student login
-              </Link>
-            </div>
           </section>
         </div>
       </div>

@@ -1,10 +1,16 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { useRouter } from "next/navigation";
 import { studentRegistrationFields, courses } from "@/lib/portal-data";
-import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
-export function StudentRegisterForm() {
+interface StudentRegisterFormProps {
+  userEmail: string;
+  authUserId: string;
+}
+
+export function StudentRegisterForm({ userEmail, authUserId }: StudentRegisterFormProps) {
+  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -17,36 +23,10 @@ export function StudentRegisterForm() {
     setIsSubmitting(true);
 
     const formData = new FormData(form);
-    const fullName = String(formData.get("fullName") ?? "").trim();
-    const email = String(formData.get("email") ?? "").trim();
-    const password = String(formData.get("password") ?? "");
-    const selectedCourse = String(formData.get("selectedCourse") ?? "");
-
-    const supabase = createSupabaseBrowserClient();
-    const { data, error: signUpError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          full_name: fullName,
-          selected_course: selectedCourse,
-        },
-      },
-    });
-
-    if (signUpError) {
-      setIsSubmitting(false);
-      setError(signUpError.message);
-      return;
-    }
-
-    if (!data.user?.id) {
-      setIsSubmitting(false);
-      setError("Student account was created, but no user ID was returned.");
-      return;
-    }
-
-    formData.append("authUserId", data.user.id);
+    
+    // Add auth identifiers from props
+    formData.append("authUserId", authUserId);
+    formData.append("email", userEmail);
 
     const response = await fetch("/api/students/register", {
       method: "POST",
@@ -55,9 +35,8 @@ export function StudentRegisterForm() {
 
     const result = (await response.json()) as { error?: string; warning?: string };
 
-    setIsSubmitting(false);
-
     if (!response.ok) {
+      setIsSubmitting(false);
       setError(result.error ?? "Student data could not be saved.");
       return;
     }
@@ -65,12 +44,18 @@ export function StudentRegisterForm() {
     form.reset();
     setSuccessMessage(
       [
-        "Your account has been created and your student record has been saved to the institute database.",
+        "Your student record has been saved to the institute database.",
         result.warning ?? "",
       ]
         .filter(Boolean)
         .join(" "),
     );
+    
+    // Redirect to dashboard after a short delay
+    setTimeout(() => {
+      router.push("/student/dashboard");
+      router.refresh();
+    }, 1500);
   }
 
   return (
@@ -84,10 +69,13 @@ export function StudentRegisterForm() {
       {successMessage ? (
         <div className="md:col-span-2 rounded-[22px] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm leading-6 text-emerald-700">
           {successMessage}
+          <div className="mt-2 text-emerald-600 font-medium">Redirecting to dashboard...</div>
         </div>
       ) : null}
 
-      {studentRegistrationFields.map((field) => (
+      {studentRegistrationFields
+        .filter((field) => field.name !== "email")
+        .map((field) => (
         <div key={field.name} className={field.fullWidth ? "md:col-span-2" : ""}>
           <label className="field-label" htmlFor={field.name}>
             {field.label}
@@ -130,21 +118,6 @@ export function StudentRegisterForm() {
       ))}
 
       <div>
-        <label className="field-label" htmlFor="password">
-          Password
-        </label>
-        <input
-          className="input-field"
-          id="password"
-          name="password"
-          type="password"
-          placeholder="Create a password"
-          minLength={6}
-          required
-        />
-      </div>
-
-      <div>
         <label className="field-label" htmlFor="courseMode">
           Enrollment mode
         </label>
@@ -160,16 +133,15 @@ export function StudentRegisterForm() {
       <div className="md:col-span-2 flex flex-col gap-3 rounded-[24px] border border-dashed border-sky-200 bg-sky-50 p-5 text-sm leading-7 text-slate-600">
         <p className="font-semibold text-slate-900">Current stage</p>
         <p>
-          This form creates the student login account, saves the admission
-          record in Google Sheets, and stores uploaded profile images in
-          Supabase Storage when the bucket is configured correctly.
+          This form saves your admission record in the institute database and stores 
+          uploaded profile images. Your account login was already created in the previous step.
         </p>
         <p>Accepted image formats: JPG, PNG, or WebP up to 200 KB.</p>
       </div>
 
       <div className="md:col-span-2 flex flex-col gap-4 sm:flex-row">
         <button className="primary-button" type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Creating account..." : "Create Student Account"}
+          {isSubmitting ? "Submitting Registration..." : "Complete Registration"}
         </button>
       </div>
     </form>

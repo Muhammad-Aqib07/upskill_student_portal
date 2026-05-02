@@ -22,11 +22,22 @@ export async function middleware(request: NextRequest) {
       pathname.startsWith("/admin/certificates") ||
       pathname.startsWith("/admin/students");
 
-    if (isStudentProtected && !user) {
-      const url = request.nextUrl.clone();
-      url.pathname = "/student/login";
-      url.searchParams.set("error", "student-auth-required");
-      return NextResponse.redirect(url);
+    if (isStudentProtected) {
+      if (!user) {
+        const url = request.nextUrl.clone();
+        url.pathname = "/student/login";
+        url.searchParams.set("error", "student-auth-required");
+        return NextResponse.redirect(url);
+      }
+
+      const email = user.email?.toLowerCase() ?? "";
+      if (getAllowedAdminEmails().includes(email)) {
+        // Prevent admin from opening student portal
+        const url = request.nextUrl.clone();
+        url.pathname = "/admin/dashboard";
+        url.searchParams.set("error", "admin-restricted-from-student-portal");
+        return NextResponse.redirect(url);
+      }
     }
 
     if (isAdminProtected) {

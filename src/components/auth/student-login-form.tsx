@@ -11,19 +11,34 @@ export function StudentLoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  async function handleEmailLogin(event: FormEvent<HTMLFormElement>) {
+  const [isSignUp, setIsSignUp] = useState(false);
+
+  async function handleEmailAuth(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
 
     const supabase = createSupabaseBrowserClient();
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    
+    if (isSignUp) {
+      const { error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+      });
 
-    if (signInError) {
-      setError(signInError.message);
-      return;
+      if (signUpError) {
+        setError(signUpError.message);
+        return;
+      }
+    } else {
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (signInError) {
+        setError(signInError.message);
+        return;
+      }
     }
 
     startTransition(() => {
@@ -58,7 +73,7 @@ export function StudentLoginForm() {
         </div>
       ) : null}
 
-      <form className="grid gap-5" onSubmit={handleEmailLogin}>
+      <form className="grid gap-5" onSubmit={handleEmailAuth}>
         <div>
           <label className="field-label" htmlFor="student-email">
             Email address
@@ -82,16 +97,37 @@ export function StudentLoginForm() {
             className="input-field"
             id="student-password"
             type="password"
-            placeholder="Enter your password"
+            placeholder={isSignUp ? "Create a password" : "Enter your password"}
             value={password}
             onChange={(event) => setPassword(event.target.value)}
+            minLength={6}
             required
           />
         </div>
 
         <button className="primary-button w-full" type="submit" disabled={isPending}>
-          {isPending ? "Opening dashboard..." : "Login with Email"}
+          {isPending 
+            ? "Opening dashboard..." 
+            : isSignUp ? "Create Account" : "Login with Email"}
         </button>
+        
+        <div className="text-center text-sm text-[var(--muted)]">
+          {isSignUp ? "Already have an account? " : "Don't have an account? "}
+          <button
+            type="button"
+            className="font-semibold text-sky-300 hover:underline"
+            onClick={() => setIsSignUp(!isSignUp)}
+          >
+            {isSignUp ? "Log in" : "Sign up"}
+          </button>
+        </div>
+
+        <div className="relative flex items-center py-2">
+          <div className="flex-grow border-t border-white/10"></div>
+          <span className="flex-shrink-0 px-4 text-xs tracking-wider text-[var(--muted)] uppercase">or</span>
+          <div className="flex-grow border-t border-white/10"></div>
+        </div>
+
         <button
           className="secondary-button w-full"
           type="button"

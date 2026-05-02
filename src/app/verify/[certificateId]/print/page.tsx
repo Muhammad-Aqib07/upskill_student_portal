@@ -1,28 +1,41 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PrintButton } from "@/components/print-button";
-import { requireAdminUser } from "@/lib/auth";
 import { INSTITUTE_NAME } from "@/lib/constants";
-import { getCertificateById } from "@/lib/google-sheets";
+import { getCertificateWorkspace } from "@/lib/google-sheets";
 
 export const dynamic = "force-dynamic";
 
-export default async function CertificatePrintPage({
+export default async function PublicCertificatePrintPage({
   params,
 }: {
   params: Promise<{ certificateId: string }>;
 }) {
-  await requireAdminUser();
   const { certificateId } = await params;
-  const certificate = await getCertificateById(certificateId);
+  
+  const workspace = await getCertificateWorkspace();
+  const certificate = workspace.certificates.find(
+    (c) =>
+      c.certificate_id === certificateId ||
+      c.certificate_code === certificateId,
+  );
 
   if (!certificate) {
+    notFound();
+  }
+
+  const isPublic = certificate.public_visible.toLowerCase() === "true";
+  const isApproved = certificate.admin_approved.toLowerCase() === "true";
+  const isPaid = certificate.certificate_fee_status.toLowerCase() === "paid";
+
+  if (!isPublic || !isApproved || !isPaid) {
     notFound();
   }
 
   return (
     <>
       <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap');
         @media print {
           @page { size: landscape; margin: 0mm; }
           body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -41,8 +54,8 @@ export default async function CertificatePrintPage({
           </div>
 
           <div className="flex flex-col gap-3 sm:flex-row">
-            <Link className="secondary-button w-fit" href="/admin/certificates">
-              Back to Certificates
+            <Link className="secondary-button w-fit" href="/verify">
+              Back to Verification
             </Link>
             <PrintButton />
           </div>
