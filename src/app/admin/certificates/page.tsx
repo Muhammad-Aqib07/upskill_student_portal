@@ -2,6 +2,7 @@ import Link from "next/link";
 import { CertificateForm } from "@/components/admin/certificate-form";
 import { AdminStudentForm } from "@/components/admin/admin-student-form";
 import { CertificateVisibilityToggle } from "@/components/admin/certificate-visibility-toggle";
+import { CertificateApprovalToggle } from "@/components/admin/certificate-approval-toggle";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { requireAdminUser } from "@/lib/auth";
 import { getCertificateWorkspace } from "@/lib/google-sheets";
@@ -156,7 +157,7 @@ export default async function AdminCertificatesPage({
                       <th className="text-left font-semibold">Code</th>
                       <th className="text-left font-semibold">Approved</th>
                       <th className="text-left font-semibold">Public</th>
-                      <th className="text-left font-semibold">Print</th>
+                      <th className="text-left font-semibold">Documents</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -186,9 +187,10 @@ export default async function AdminCertificatesPage({
                         <td className="py-4 text-xs">{certificate.course_name}</td>
                         <td className="py-4 font-mono text-[10px]">{certificate.certificate_code}</td>
                         <td className="py-4">
-                          <span className={`status-pill ${certificate.admin_approved === "TRUE" ? "bg-emerald-500/10 text-emerald-400" : "bg-amber-500/10 text-amber-400"}`}>
-                            {certificate.admin_approved === "TRUE" ? "Yes" : "No"}
-                          </span>
+                          <CertificateApprovalToggle
+                            certificateId={certificate.certificate_id}
+                            initialValue={certificate.admin_approved.toUpperCase() === "TRUE"}
+                          />
                         </td>
                         <td className="py-4">
                           <CertificateVisibilityToggle 
@@ -197,12 +199,22 @@ export default async function AdminCertificatesPage({
                           />
                         </td>
                         <td className="py-4">
-                          <Link
-                            className="font-semibold text-sky-300 hover:text-sky-200"
-                            href={`/admin/certificates/${certificate.certificate_id}`}
-                          >
-                            Open
-                          </Link>
+                          <div className="flex flex-col gap-1">
+                            <Link
+                              className="font-semibold text-sky-400 hover:text-sky-300"
+                              href={`/verify/${certificate.certificate_id}/print`}
+                              target="_blank"
+                            >
+                              Certificate
+                            </Link>
+                            <Link
+                              className="font-semibold text-sky-400/70 hover:text-sky-300"
+                              href={`/verify/${certificate.certificate_id}/letter`}
+                              target="_blank"
+                            >
+                              Letter
+                            </Link>
+                          </div>
                         </td>
                       </tr>
                     ))}

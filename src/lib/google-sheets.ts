@@ -730,12 +730,28 @@ export async function createCertificateRecord(input: {
     );
   }
 
-  const existingCertificate = certificates.find(
+  const existingIndex = certificates.findIndex(
     (certificate) => certificate.enrollment_id === input.enrollmentId,
   );
 
-  if (existingCertificate) {
-    return existingCertificate;
+  if (existingIndex !== -1) {
+    console.log("Updating existing certificate record...");
+    const cert = { ...certificates[existingIndex] };
+    cert.admin_approved = input.adminApproved ? "TRUE" : "FALSE";
+    cert.public_visible = input.publicVisible ? "TRUE" : "FALSE";
+    cert.certificate_fee_status = input.certificateFeeStatus;
+    cert.course_name = input.courseName;
+    cert.issue_date = input.issueDate;
+
+    await updateRow(
+      SHEET_TABS.certificates,
+      existingIndex + 1, // +1 because rows are 0-indexed and the first row is header
+      CERTIFICATE_HEADERS.map((header) => cert[header]),
+    );
+
+    // If marked paid, we should also ensure a payment record exists (or skip for now if already exists)
+    // For simplicity, we just return the updated cert
+    return cert;
   }
 
   const certificateId = randomUUID();
@@ -756,10 +772,12 @@ export async function createCertificateRecord(input: {
     created_by: input.createdBy,
   };
 
+  console.log("Creating certificate record:", row.certificate_id, row.certificate_code);
   await appendRow(
     SHEET_TABS.certificates,
     CERTIFICATE_HEADERS.map((header) => row[header]),
   );
+  console.log("Certificate record created successfully");
 
   if (input.certificateFeeStatus.toLowerCase() === "paid") {
     const paymentRow = {
@@ -869,6 +887,24 @@ export async function toggleCertificateVisibility(certificateId: string) {
   const currentValue = row[publicVisibleIndex]?.toUpperCase() === "TRUE";
   const newValue = !currentValue;
   row[publicVisibleIndex] = newValue ? "TRUE" : "FALSE";
+
+  await updateRow(SHEET_TABS.certificates, rowIndex, row);
+  return newValue;
+}
+
+export async function toggleCertificateApproval(certificateId: string) {
+  await ensurePortalSheetsSetup();
+  const rows = await getRows(SHEET_TABS.certificates);
+  
+  const rowIndex = rows.findIndex((row) => row[0] === certificateId);
+  if (rowIndex === -1) return null;
+
+  const row = [...rows[rowIndex]];
+  const approvedIndex = CERTIFICATE_HEADERS.indexOf("admin_approved");
+  
+  const currentValue = row[approvedIndex]?.toUpperCase() === "TRUE";
+  const newValue = !currentValue;
+  row[approvedIndex] = newValue ? "TRUE" : "FALSE";
 
   await updateRow(SHEET_TABS.certificates, rowIndex, row);
   return newValue;

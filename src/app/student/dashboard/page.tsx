@@ -48,8 +48,11 @@ export default async function StudentDashboardPage() {
             </div>
 
             <div className="flex flex-col gap-3 sm:flex-row xl:flex-col">
+              <Link className="secondary-button w-fit" href="/student/certificates">
+                My Certificates &amp; Letters
+              </Link>
               <Link className="secondary-button w-fit" href="/verify">
-                Check Public Verification
+                Public Verification
               </Link>
               <LogoutButton redirectTo="/student/login" />
             </div>
@@ -84,28 +87,45 @@ export default async function StudentDashboardPage() {
                 </div>
               ) : null}
 
-              {data.enrollments.map((item) => (
-                <div
-                  key={item.enrollment_id}
-                  className="rounded-[24px] border border-white/10 bg-white/5 p-5 backdrop-blur"
-                >
-                  <div className="grid gap-4 lg:grid-cols-4">
-                    <InfoBlock label="Course" value={item.course_name} />
-                    <InfoBlock label="Fee" value={item.fee_status} />
-                    <InfoBlock label="Progress" value={item.status} />
-                    <InfoBlock
-                      label="Certificate"
-                      value={
-                        data.certificates.find(
-                          (certificate) => certificate.enrollment_id === item.enrollment_id,
-                        )?.admin_approved?.toLowerCase() === "true"
-                          ? "Issued"
-                          : "Pending"
-                      }
-                    />
+              {data.enrollments.map((item) => {
+                const cert = data.certificates.find(
+                  (c) => c.enrollment_id === item.enrollment_id,
+                );
+                const isIssued =
+                  cert?.admin_approved?.toLowerCase() === "true" &&
+                  cert?.certificate_fee_status?.toLowerCase() === "paid";
+
+                return (
+                  <div
+                    key={item.enrollment_id}
+                    className="rounded-[24px] border border-white/10 bg-white/5 p-5 backdrop-blur"
+                  >
+                    <div className="grid gap-4 lg:grid-cols-4">
+                      <InfoBlock label="Course" value={item.course_name} />
+                      <InfoBlock label="Fee" value={item.fee_status} />
+                      <InfoBlock label="Progress" value={item.status} />
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">
+                          Certificate
+                        </p>
+                        {isIssued && cert ? (
+                          <Link
+                            href={`/student/certificates/${cert.certificate_id}/print`}
+                            target="_blank"
+                            className="mt-2 inline-block text-sm font-semibold text-sky-400 hover:text-sky-300"
+                          >
+                            View Certificate →
+                          </Link>
+                        ) : (
+                          <p className="mt-2 font-semibold text-[var(--foreground)]">
+                            {cert ? "Pending Approval" : "Not Issued"}
+                          </p>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </section>
 

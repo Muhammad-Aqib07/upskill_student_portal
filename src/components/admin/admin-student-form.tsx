@@ -1,12 +1,14 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { useRouter } from "next/navigation";
 import { courses, studentRegistrationFields } from "@/lib/portal-data";
 
 export function AdminStudentForm() {
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const router = useRouter();
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -35,6 +37,8 @@ export function AdminStudentForm() {
     }
 
     form.reset();
+    router.refresh();
+
     setSuccessMessage(
       result.warning
         ? `Student saved with registration ${result.registrationNo}. ${result.warning}`

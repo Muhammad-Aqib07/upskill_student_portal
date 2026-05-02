@@ -3,6 +3,7 @@ import { createCertificateRecord } from "@/lib/google-sheets";
 
 export async function POST(request: Request) {
   try {
+    console.log("POST /api/admin/certificates hit");
     const formData = await request.formData();
 
     const studentId = String(formData.get("studentId") ?? "").trim();
@@ -39,7 +40,7 @@ export async function POST(request: Request) {
       success: true,
       certificateId: certificate.certificate_id,
       certificateCode: certificate.certificate_code,
-      printUrl: `/admin/certificates/${certificate.certificate_id}`,
+      printUrl: `/verify/${certificate.certificate_id}/print`,
     });
   } catch (error) {
     return NextResponse.json(

@@ -75,8 +75,12 @@ export function CertificateForm({
       return;
     }
 
+    if (result.printUrl) {
+      window.open(result.printUrl, "_blank");
+    }
+
     setSuccessMessage(
-      `Certificate ${result.certificateCode} created successfully. The record is now ready inside ${INSTITUTE_NAME}.`,
+      `Certificate ${result.certificateCode} created successfully. Opening in a new tab...`,
     );
     form.reset();
     setSelectedEnrollmentId(enrollments[0]?.enrollmentId ?? "");

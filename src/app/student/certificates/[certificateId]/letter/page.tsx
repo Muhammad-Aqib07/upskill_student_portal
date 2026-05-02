@@ -1,20 +1,31 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { PrintButton } from "@/components/print-button";
 import { INSTITUTE_NAME } from "@/lib/constants";
-import { getCertificateWorkspace } from "@/lib/google-sheets";
+import { requireStudentUser } from "@/lib/auth";
+import { getStudentDashboardData } from "@/lib/google-sheets";
 
 export const dynamic = "force-dynamic";
 
-export default async function PublicCompletionLetterPrintPage({
+export default async function StudentCompletionLetterPage({
   params,
 }: {
   params: Promise<{ certificateId: string }>;
 }) {
   const { certificateId } = await params;
-  
-  const workspace = await getCertificateWorkspace();
-  const certificate = workspace.certificates.find(
+  const user = await requireStudentUser();
+
+  const data = await getStudentDashboardData({
+    authUserId: user.id,
+    email: user.email,
+  });
+
+  if (!data.student) {
+    redirect("/student/register");
+  }
+
+  // Only show certificates belonging to this student
+  const certificate = data.certificates.find(
     (c) =>
       c.certificate_id === certificateId ||
       c.certificate_code === certificateId,
@@ -24,25 +35,25 @@ export default async function PublicCompletionLetterPrintPage({
     notFound();
   }
 
-  const isPublic = certificate.public_visible.toLowerCase() === "true";
-  const isApproved = certificate.admin_approved.trim().toLowerCase() === "true";
-  const isPaid = certificate.certificate_fee_status.trim().toLowerCase() === "paid";
+  // Access gate: must be approved + paid
+  const isApproved = certificate.admin_approved.toLowerCase() === "true";
+  const isPaid = certificate.certificate_fee_status.toLowerCase() === "paid";
 
   if (!isApproved || !isPaid) {
     notFound();
   }
 
-  const today = new Date().toLocaleDateString('en-US', { 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric' 
+  const today = new Date().toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
   });
 
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
-        
+        @import url('https://fonts.googleapis.com/css2?family=Great+Vibes&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+
         @media print {
           @page { size: portrait; margin: 0mm; }
           body { -webkit-print-color-adjust: exact; print-color-adjust: exact; margin: 0; }
@@ -106,41 +117,6 @@ export default async function PublicCompletionLetterPrintPage({
           flex: 1;
         }
 
-        .letter-meta {
-          display: flex;
-          justify-content: space-between;
-          margin-bottom: 60px;
-          font-size: 14px;
-        }
-
-        .letter-subject {
-          text-align: center;
-          margin-bottom: 50px;
-          font-size: 20px;
-          font-weight: 700;
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-          text-decoration: underline;
-          text-underline-offset: 8px;
-          color: #0f172a;
-        }
-
-        .letter-salutation {
-          margin-bottom: 30px;
-          font-weight: 600;
-        }
-
-        .letter-text {
-          font-size: 16px;
-          line-height: 1.8;
-          text-align: justify;
-          margin-bottom: 30px;
-        }
-
-        .letter-text p {
-          margin-bottom: 25px;
-        }
-
         .letter-footer {
           margin-top: 80px;
           display: flex;
@@ -150,11 +126,6 @@ export default async function PublicCompletionLetterPrintPage({
 
         .letter-signature {
           width: 250px;
-        }
-
-        .letter-sig-placeholder {
-          height: 60px;
-          margin-bottom: 10px;
         }
 
         .letter-sig-line {
@@ -181,13 +152,12 @@ export default async function PublicCompletionLetterPrintPage({
               Official Correspondence
             </p>
             <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">
-              Completion Letter
+              Course Completion Letter
             </h1>
           </div>
-
           <div className="flex flex-col gap-3 sm:flex-row">
-            <Link className="secondary-button w-fit" href="/verify">
-              Back to Verification
+            <Link className="secondary-button w-fit" href="/student/certificates">
+              ← My Documents
             </Link>
             <PrintButton />
           </div>
@@ -196,66 +166,79 @@ export default async function PublicCompletionLetterPrintPage({
         <div className="letter-container">
           <div className="letter-watermark">OFFICIAL</div>
 
-          <div className="letter-header">
-            <img src="/logo.png" alt="Logo" className="letter-logo-img" />
-            <div className="letter-contact">
-              {INSTITUTE_NAME}<br />
-              Academic Department<br />
-              upskilltechtandlianwala@gmail.com<br />
-              www.upskilltechofficials.online
-            </div>
-          </div>
-
           <div className="letter-body">
+            {/* Header / Letterhead */}
+            <div className="letter-header">
+              <img src="/logo.png" alt="Logo" className="letter-logo-img" />
+              <div className="letter-contact">
+                {INSTITUTE_NAME}<br />
+                Academic Department<br />
+                upskilltechtandlianwala@gmail.com<br />
+                www.upskilltechofficials.online
+              </div>
+            </div>
+
+            {/* Reference & Date */}
             <div className="letter-meta">
-              <div>Ref: <b>{certificate.certificate_code}</b></div>
+              <div>
+                Ref No: <b>{certificate.certificate_code}</b>
+              </div>
               <div>Date: <b>{today}</b></div>
             </div>
 
-            <h2 className="letter-subject">Course Completion Certificate</h2>
+            {/* Subject */}
+            <h2 className="letter-subject">Course Completion Letter</h2>
 
             <p className="letter-salutation">To Whom It May Concern,</p>
 
             <div className="letter-text">
               <p>
-                This letter serves as formal confirmation that <b>{certificate.student_name}</b>, 
-                son/daughter of <b>{certificate.father_name || "N/A"}</b>, 
-                holding Registration Number <b>{certificate.registration_no}</b>, 
-                has successfully fulfilled all the academic and practical requirements for the 
-                <b> {certificate.course_name}</b> training program at {INSTITUTE_NAME}.
-              </p>
-              
-              <p>
-                The program was completed on <b>{certificate.issue_date}</b>. Throughout the duration of the course, 
-                the student demonstrated exemplary performance, technical proficiency, and a commitment to professional excellence 
-                in the subject matter.
+                This letter is issued to formally certify that{" "}
+                <b>{certificate.student_name}</b>, son/daughter of{" "}
+                <b>{certificate.father_name || "N/A"}</b>, bearing Registration
+                Number <b>{certificate.registration_no || "N/A"}</b>, has
+                successfully completed all academic and practical requirements
+                of the <b>{certificate.course_name}</b> program offered by{" "}
+                {INSTITUTE_NAME}.
               </p>
 
               <p>
-                {INSTITUTE_NAME} is committed to providing industry-standard technical education. This credential 
-                is awarded only after rigorous assessment and validation of the student&apos;s competencies. 
+                The program was successfully completed on{" "}
+                <b>{certificate.issue_date}</b>. Throughout the course, the
+                student demonstrated exceptional dedication, technical
+                proficiency, and a strong commitment to professional excellence
+                in the relevant subject matter.
               </p>
 
               <p>
-                The authenticity of this letter and the associated certification can be verified at any time on our 
-                official portal by entering the reference number provided above.
+                {INSTITUTE_NAME} is committed to delivering industry-standard
+                technical and professional education. Credentials issued by this
+                institution are awarded only after rigorous assessment and
+                comprehensive evaluation of the student&apos;s knowledge and
+                competencies.
               </p>
 
               <p>
-                We commend <b>{certificate.student_name}</b> on this achievement and wish them great success 
-                in their professional career.
+                The authenticity of this document and the associated
+                certificate may be verified at any time by scanning the attached
+                QR code or by using the reference number stated above on our
+                official verification portal.
+              </p>
+
+              <p>
+                We extend our heartfelt congratulations to{" "}
+                <b>{certificate.student_name}</b> on this achievement and wish
+                them continued success in all future academic and professional
+                pursuits.
               </p>
             </div>
 
+            {/* Footer with Signature, Stamp, QR */}
             <div className="letter-footer">
               <div className="letter-signature">
-                <div className="letter-sig-placeholder">
-                  {/* Signature Font Placeholder */}
-                  <span style={{ fontFamily: 'Great Vibes, cursive', fontSize: '32px', color: '#001f54' }}>Amir Khan</span>
-                </div>
-                <div className="letter-sig-line"></div>
+                <div className="letter-sig-line" />
                 <div className="letter-sig-name">Muhammad Amir Khan</div>
-                <div className="letter-sig-title">CEO & Director Academics</div>
+                <div className="letter-sig-title">CEO &amp; Director Academics</div>
                 <div className="letter-sig-title">{INSTITUTE_NAME}</div>
               </div>
               <img src="/sealimage.png" alt="Official Seal" className="h-44 w-auto opacity-95" />
