@@ -79,3 +79,10 @@ export type EnrollmentRecord = Record<(typeof ENROLLMENT_HEADERS)[number], strin
 export type CertificateRecord = Record<(typeof CERTIFICATE_HEADERS)[number], string>;
 export type PaymentRecord = Record<(typeof PAYMENT_HEADERS)[number], string>;
 export type CourseRecord = Record<(typeof COURSE_HEADERS)[number], string>;
+
+export type EnrichedCertificateRecord = CertificateRecord & {
+  student_name: string;
+  father_name: string;
+  registration_no: string;
+  cnic_bform: string;
+};

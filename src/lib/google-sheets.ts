@@ -8,6 +8,7 @@ import {
   SHEET_TABS,
   STUDENT_HEADERS,
   type CertificateRecord,
+  type EnrichedCertificateRecord,
   type EnrollmentRecord,
   type StudentRecord,
 } from "@/lib/sheet-schema";
@@ -530,9 +531,20 @@ export async function getStudentDashboardData({
     enrollments: enrollments.filter(
       (enrollment) => enrollment.student_id === student.student_id,
     ),
-    certificates: certificates.filter(
-      (certificate) => certificate.student_id === student.student_id,
-    ),
+    certificates: certificates
+      .filter((certificate) => certificate.student_id === student.student_id)
+      .map((certificate) => {
+        const enrollment = enrollments.find(
+          (e) => e.enrollment_id === certificate.enrollment_id,
+        );
+        return {
+          ...certificate,
+          student_name: student.full_name,
+          father_name: student.father_name,
+          registration_no: enrollment?.registration_no || student.registration_no,
+          cnic_bform: student.cnic_bform,
+        } as EnrichedCertificateRecord;
+      }),
   };
 }
 
@@ -643,7 +655,7 @@ export async function getCertificateWorkspace() {
           father_name: student?.father_name ?? "",
           registration_no: enrollment?.registration_no || student?.registration_no || "",
           cnic_bform: student?.cnic_bform ?? "",
-        };
+        } as EnrichedCertificateRecord;
       }),
   };
 }

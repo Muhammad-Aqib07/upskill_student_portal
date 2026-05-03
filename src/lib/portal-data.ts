@@ -17,6 +17,7 @@ export const courses = [
   "Ecommerce",
   "Digital Marketing",
   "Office Management",
+  "Python Programming",
 ];
 
 export const studentFeatures = [
