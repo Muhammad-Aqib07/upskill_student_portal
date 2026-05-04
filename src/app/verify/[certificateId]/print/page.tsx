@@ -108,7 +108,7 @@ export default async function PublicCertificatePrintPage({
           display: flex;
           flex-direction: column;
           align-items: center;
-          padding: 40px 80px;
+          padding: 25px 60px;
           text-align: center;
         }
 
@@ -144,7 +144,7 @@ export default async function PublicCertificatePrintPage({
 
         .cert-title {
           font-family: 'Playfair Display', serif;
-          font-size: 44px;
+          font-size: 38px;
           font-weight: 700;
           color: #001f54;
           text-transform: uppercase;
@@ -170,7 +170,7 @@ export default async function PublicCertificatePrintPage({
 
         .cert-recipient-name {
           font-family: 'Cinzel', serif;
-          font-size: 66px;
+          font-size: 46px;
           color: #001f54;
           margin-bottom: 15px;
           line-height: 1.1;
@@ -196,9 +196,9 @@ export default async function PublicCertificatePrintPage({
         }
 
         .cert-course-info {
-          font-size: 20px;
+          font-size: 17px;
           color: #001f54;
-          max-width: 800px;
+          max-width: 850px;
           line-height: 1.6;
         }
 

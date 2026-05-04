@@ -83,7 +83,7 @@ export default async function StudentCertificatePrintPage({
         }
         .cert-content {
           position: relative; z-index: 20; height: 100%; display: flex;
-          flex-direction: column; align-items: center; padding: 40px 80px; text-align: center;
+          flex-direction: column; align-items: center; padding: 25px 60px; text-align: center;
         }
         .cert-header-logo { margin-bottom: 15px; }
         .cert-header-logo img { height: 80px; width: auto; }
@@ -109,7 +109,7 @@ export default async function StudentCertificatePrintPage({
           font-weight: 700;
         }
         .cert-title {
-          font-family: 'Playfair Display', serif; font-size: 42px; font-weight: 700;
+          font-family: 'Playfair Display', serif; font-size: 38px; font-weight: 700;
           color: #001f54; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 5px;
         }
         .cert-subtitle {
@@ -118,7 +118,7 @@ export default async function StudentCertificatePrintPage({
         }
         .cert-recipient-label { font-size: 17px; color: #59708f; font-weight: 400; margin-bottom: 16px; }
         .cert-recipient-name {
-          font-family: 'Cinzel', serif; font-size: 64px; color: #001f54;
+          font-family: 'Cinzel', serif; font-size: 46px; color: #001f54;
           margin-bottom: 12px; line-height: 1.1; font-weight: 700;
           letter-spacing: 0.05em; text-transform: uppercase;
         }
@@ -135,7 +135,7 @@ export default async function StudentCertificatePrintPage({
           background: linear-gradient(to right, transparent, #00a3e0, transparent);
           margin-bottom: 15px;
         }
-        .cert-course-info { font-size: 18px; color: #001f54; max-width: 800px; line-height: 1.6; }
+        .cert-course-info { font-size: 16px; color: #001f54; max-width: 850px; line-height: 1.6; }
         .cert-course-info b { font-weight: 700; color: #00a3e0; }
         .cert-footer { margin-top: auto; width: 100%; display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 15px; }
         .cert-metadata { flex: 1; visibility: hidden; }
