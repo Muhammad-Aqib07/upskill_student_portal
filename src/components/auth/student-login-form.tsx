@@ -53,7 +53,11 @@ export function StudentLoginForm() {
     });
 
     if (otpError) {
-      setError(otpError.message);
+      setError(
+        otpError.message.includes("Database error")
+          ? "This email account is in a corrupted state. Please completely delete the user in the Supabase Dashboard, or try a different email address."
+          : otpError.message
+      );
       return;
     }
 
@@ -74,7 +78,11 @@ export function StudentLoginForm() {
     });
 
     if (verifyError) {
-      setError(verifyError.message);
+      setError(
+        verifyError.message.includes("Database error")
+          ? "This email account is in a corrupted state. Please completely delete the user in the Supabase Dashboard, or try a different email address."
+          : verifyError.message
+      );
       return;
     }
 
