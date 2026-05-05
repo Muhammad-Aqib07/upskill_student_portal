@@ -176,9 +176,6 @@ export function StudentLoginForm() {
           >
             Continue with Google
           </button>
-          <p className="mt-2 text-center text-xs text-[var(--muted)] opacity-80">
-            This method is not working for some technical issue so make it through signup with mail then continue with google feature for now.
-          </p>
         </form>
       ) : (
         <>
