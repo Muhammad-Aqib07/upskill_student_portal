@@ -142,6 +142,16 @@ export default async function PublicCertificatePrintPage({
           font-weight: 700;
         }
 
+        .cert-qr-scanner {
+          margin-top: 25px;
+        }
+
+        .cert-qr-scanner img {
+          width: 100px;
+          height: 100px;
+          border-radius: 4px;
+        }
+
         .cert-title {
           font-family: 'Playfair Display', serif;
           font-size: 38px;
@@ -322,6 +332,9 @@ export default async function PublicCertificatePrintPage({
               <div className="cert-top-meta-item">Registration: <b>{certificate.registration_no}</b></div>
               <div className="cert-top-meta-item">Certificate ID: <b>{certificate.certificate_code}</b></div>
               <div className="cert-top-meta-item">Date of Issue: <b>{certificate.issue_date}</b></div>
+              <div className="cert-qr-scanner">
+                <img src="/scanner.jpeg" alt="QR Scanner" />
+              </div>
             </div>
 
             <div className="cert-header-logo">
