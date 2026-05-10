@@ -1,9 +1,9 @@
 import Link from "next/link";
+import { AdminMenuTrigger } from "@/components/admin/admin-side-panel";
 import { CertificateForm } from "@/components/admin/certificate-form";
 import { AdminStudentForm } from "@/components/admin/admin-student-form";
 import { CertificateVisibilityToggle } from "@/components/admin/certificate-visibility-toggle";
 import { CertificateApprovalToggle } from "@/components/admin/certificate-approval-toggle";
-import { LogoutButton } from "@/components/auth/logout-button";
 import { requireAdminUser } from "@/lib/auth";
 import { getCertificateWorkspace } from "@/lib/google-sheets";
 
@@ -14,9 +14,19 @@ export default async function AdminCertificatesPage({
 }: {
   searchParams: Promise<{ tab?: string }>;
 }) {
-  await requireAdminUser();
+  const user = await requireAdminUser();
   const { tab = "issued" } = await searchParams;
   const workspace = await getCertificateWorkspace();
+  const userMetadata = user.user_metadata as Record<string, string | undefined>;
+  const adminName =
+    userMetadata.full_name ??
+    userMetadata.name ??
+    user.email?.split("@")[0] ??
+    "Admin";
+  const adminImageUrl =
+    userMetadata.avatar_url ??
+    userMetadata.picture ??
+    null;
 
   const enrollmentOptions = workspace.enrollments.map((enrollment) => {
     const student = workspace.students.find(
@@ -56,9 +66,12 @@ export default async function AdminCertificatesPage({
                 actions more effectively.
               </p>
             </div>
-
-            <div className="flex flex-col gap-3 sm:flex-row xl:flex-col">
-              <LogoutButton redirectTo="/admin/login" />
+            <div className="flex justify-end">
+              <AdminMenuTrigger
+                adminEmail={user.email ?? ""}
+                adminName={adminName}
+                adminImageUrl={adminImageUrl}
+              />
             </div>
           </div>
 
@@ -128,7 +141,11 @@ export default async function AdminCertificatesPage({
               <div className="mt-8">
                 {enrollmentOptions.length === 0 ? (
                   <div className="rounded-[24px] border border-dashed border-white/15 bg-white/5 p-6 text-sm leading-7 text-[var(--muted)]">
-                    No enrollments exist yet. Add a student first using the "Add Student" tab.
+                    No enrollments exist yet. Add a student first using the
+                    {" "}
+                    &quot;Add Student&quot;
+                    {" "}
+                    tab.
                   </div>
                 ) : (
                   <CertificateForm enrollments={enrollmentOptions} />

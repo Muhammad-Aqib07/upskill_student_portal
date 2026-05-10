@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { requireAdminUser } from "@/lib/auth";
-import { toggleCertificateApproval } from "@/lib/google-sheets";
 
 export async function POST(request: Request) {
   try {
+    const { toggleCertificateApproval } = await import("@/lib/google-sheets");
     await requireAdminUser();
     const { certificateId } = await request.json();
 

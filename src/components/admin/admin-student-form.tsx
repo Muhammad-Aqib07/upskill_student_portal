@@ -4,7 +4,35 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { courses, studentRegistrationFields } from "@/lib/portal-data";
 
-export function AdminStudentForm() {
+type AdminStudentFormData = {
+  studentId?: string;
+  enrollmentId?: string;
+  fullName?: string;
+  fatherName?: string;
+  cnicBForm?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  city?: string;
+  gender?: string;
+  dateOfBirth?: string;
+  education?: string;
+  selectedCourse?: string;
+  enrollmentStatus?: string;
+  feeStatus?: string;
+  courseCompleted?: string;
+  notes?: string;
+  profileImageOneLink?: string;
+  profileImageTwoLink?: string;
+};
+
+export function AdminStudentForm({
+  mode = "create",
+  initialData,
+}: {
+  mode?: "create" | "edit";
+  initialData?: AdminStudentFormData;
+}) {
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -18,8 +46,15 @@ export function AdminStudentForm() {
     setIsSubmitting(true);
 
     const formData = new FormData(form);
+    if (mode === "edit" && initialData?.studentId) {
+      formData.append("studentId", initialData.studentId);
+    }
+    if (mode === "edit" && initialData?.enrollmentId) {
+      formData.append("enrollmentId", initialData.enrollmentId);
+    }
+
     const response = await fetch("/api/admin/students", {
-      method: "POST",
+      method: mode === "edit" ? "PUT" : "POST",
       body: formData,
     });
 
@@ -36,14 +71,18 @@ export function AdminStudentForm() {
       return;
     }
 
-    form.reset();
     router.refresh();
 
-    setSuccessMessage(
-      result.warning
-        ? `Student saved with registration ${result.registrationNo}. ${result.warning}`
-        : `Student saved successfully with registration ${result.registrationNo}.`,
-    );
+    if (mode === "create") {
+      form.reset();
+    }
+
+    const baseMessage =
+      mode === "edit"
+        ? `Student updated successfully with registration ${result.registrationNo}.`
+        : `Student saved successfully with registration ${result.registrationNo}.`;
+
+    setSuccessMessage(result.warning ? `${baseMessage} ${result.warning}` : baseMessage);
   }
 
   return (
@@ -72,7 +111,7 @@ export function AdminStudentForm() {
               className="select-field"
               id={`admin-${field.name}`}
               name={field.name}
-              defaultValue=""
+              defaultValue={initialData?.[field.name as keyof AdminStudentFormData] ?? ""}
               required
             >
               <option disabled value="">
@@ -97,6 +136,11 @@ export function AdminStudentForm() {
               name={field.name}
               type={field.type}
               placeholder={field.placeholder}
+              defaultValue={
+                field.type === "file"
+                  ? undefined
+                  : (initialData?.[field.name as keyof AdminStudentFormData] ?? "")
+              }
               required
             />
           )}
@@ -111,7 +155,7 @@ export function AdminStudentForm() {
           className="select-field"
           id="enrollmentStatus"
           name="enrollmentStatus"
-          defaultValue="active"
+          defaultValue={initialData?.enrollmentStatus ?? "active"}
         >
           <option value="active">active</option>
           <option value="completed">completed</option>
@@ -124,6 +168,9 @@ export function AdminStudentForm() {
           Fee Status
         </label>
         <select className="select-field" id="feeStatus" name="feeStatus" defaultValue="unpaid">
+          <option value={initialData?.feeStatus ?? "unpaid"} hidden>
+            {initialData?.feeStatus ?? "unpaid"}
+          </option>
           <option value="paid">paid</option>
           <option value="unpaid">unpaid</option>
         </select>
@@ -137,7 +184,7 @@ export function AdminStudentForm() {
           className="select-field"
           id="courseCompleted"
           name="courseCompleted"
-          defaultValue="FALSE"
+          defaultValue={initialData?.courseCompleted ?? "FALSE"}
         >
           <option value="FALSE">No</option>
           <option value="TRUE">Yes</option>
@@ -180,6 +227,7 @@ export function AdminStudentForm() {
           name="profileImageOneLink"
           type="url"
           placeholder="https://..."
+          defaultValue={initialData?.profileImageOneLink ?? ""}
         />
       </div>
 
@@ -193,6 +241,7 @@ export function AdminStudentForm() {
           name="profileImageTwoLink"
           type="url"
           placeholder="Optional second image link"
+          defaultValue={initialData?.profileImageTwoLink ?? ""}
         />
       </div>
 
@@ -212,12 +261,19 @@ export function AdminStudentForm() {
           id="notes"
           name="notes"
           placeholder="Old student, completed student, manual entry notes..."
+          defaultValue={initialData?.notes ?? ""}
         />
       </div>
 
       <div className="md:col-span-2 flex flex-col gap-4 border-t border-white/10 pt-2 sm:flex-row">
         <button className="primary-button" type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Saving student..." : "Save Student From Admin"}
+          {isSubmitting
+            ? mode === "edit"
+              ? "Updating student..."
+              : "Saving student..."
+            : mode === "edit"
+              ? "Update Student"
+              : "Save Student From Admin"}
         </button>
       </div>
     </form>

@@ -22,6 +22,7 @@ type SheetCacheEntry = {
 type SpreadsheetSheet = {
   properties?: {
     title?: string | null;
+    sheetId?: number | null;
   } | null;
 };
 type SpreadsheetSheetsCacheEntry = {
@@ -217,6 +218,44 @@ async function updateRow(tabName: TabName, rowIndex: number, row: string[]) {
     valueInputOption: "USER_ENTERED",
     requestBody: {
       values: [row],
+    },
+  });
+
+  invalidateTabCache(tabName);
+}
+
+async function deleteSheetRows(tabName: TabName, rowIndexes: number[]) {
+  if (rowIndexes.length === 0) {
+    return;
+  }
+
+  const sheets = getGoogleSheetsClient();
+  const spreadsheetId = requireSheetId();
+  const spreadsheetSheets = await getSpreadsheetSheets();
+  const sheetIdForTab = spreadsheetSheets.find(
+    (sheet) => sheet.properties?.title === tabName,
+  )?.properties?.sheetId;
+
+  if (typeof sheetIdForTab !== "number") {
+    throw new Error(`Sheet ID could not be resolved for ${tabName}.`);
+  }
+
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId,
+    requestBody: {
+      requests: rowIndexes
+        .slice()
+        .sort((a, b) => b - a)
+        .map((rowIndex) => ({
+          deleteDimension: {
+            range: {
+              sheetId: sheetIdForTab,
+              dimension: "ROWS",
+              startIndex: rowIndex,
+              endIndex: rowIndex + 1,
+            },
+          },
+        })),
     },
   });
 
@@ -594,6 +633,7 @@ export async function getAdminDashboardData() {
       .slice(-5)
       .reverse()
       .map((record) => ({
+        studentId: record.student_id,
         studentName:
           students.find((student) => student.student_id === record.student_id)?.full_name ??
           "Unknown Student",
@@ -622,6 +662,10 @@ export async function getAdminStudentDirectory() {
 
     return {
       ...student,
+      latestEnrollmentId: studentEnrollments.at(-1)?.enrollment_id ?? "",
+      latestEnrollmentStatus: studentEnrollments.at(-1)?.status ?? "",
+      latestEnrollmentCompleted: studentEnrollments.at(-1)?.course_completed ?? "FALSE",
+      latestEnrollmentNotes: studentEnrollments.at(-1)?.notes ?? "",
       totalCourses: studentEnrollments.length,
       latestCourse: studentEnrollments.at(-1)?.course_name ?? "Not enrolled",
       latestFeeStatus: studentEnrollments.at(-1)?.fee_status ?? "N/A",
@@ -630,6 +674,165 @@ export async function getAdminStudentDirectory() {
       ).length,
     };
   });
+}
+
+export async function getAdminStudentEditor(studentId: string) {
+  const [students, enrollments] = await Promise.all([listStudents(), listEnrollments()]);
+  const student = students.find((item) => item.student_id === studentId) ?? null;
+
+  if (!student) {
+    return null;
+  }
+
+  const latestEnrollment =
+    enrollments.filter((item) => item.student_id === studentId).at(-1) ?? null;
+
+  return {
+    student,
+    latestEnrollment,
+  };
+}
+
+export async function updateAdminStudent(input: {
+  studentId: string;
+  fullName: string;
+  fatherName: string;
+  cnicBForm: string;
+  phone: string;
+  email: string;
+  address: string;
+  city: string;
+  gender: string;
+  dateOfBirth: string;
+  education: string;
+  selectedCourse: string;
+  enrollmentStatus: string;
+  feeStatus: string;
+  courseCompleted: string;
+  notes: string;
+  enrollmentId?: string;
+  profileImageOneLink?: string;
+  profileImageTwoLink?: string;
+}) {
+  await ensurePortalSheetsSetup();
+
+  const [studentsRaw, enrollmentsRaw] = await Promise.all([
+    getRows(SHEET_TABS.students),
+    getRows(SHEET_TABS.enrollments),
+  ]);
+
+  const studentRows = mapRowsToObjects(STUDENT_HEADERS, studentsRaw.slice(1));
+  const enrollmentRows = mapRowsToObjects(ENROLLMENT_HEADERS, enrollmentsRaw.slice(1));
+
+  const studentIndex = studentRows.findIndex((row) => row.student_id === input.studentId);
+  if (studentIndex === -1) {
+    throw new Error("Student record could not be found.");
+  }
+
+  const currentStudent = studentRows[studentIndex];
+  const updatedStudent: StudentRecord = {
+    ...currentStudent,
+    full_name: input.fullName,
+    father_name: input.fatherName,
+    cnic_bform: input.cnicBForm,
+    phone: input.phone,
+    email: input.email,
+    address: input.address,
+    city: input.city,
+    gender: input.gender,
+    date_of_birth: input.dateOfBirth,
+    education: input.education,
+    profile_image_1_drive_link: input.profileImageOneLink ?? currentStudent.profile_image_1_drive_link,
+    profile_image_2_drive_link: input.profileImageTwoLink ?? currentStudent.profile_image_2_drive_link,
+  };
+
+  await updateRow(
+    SHEET_TABS.students,
+    studentIndex + 1,
+    STUDENT_HEADERS.map((header) => updatedStudent[header]),
+  );
+
+  const enrollmentId =
+    input.enrollmentId ||
+    enrollmentRows.filter((row) => row.student_id === input.studentId).at(-1)?.enrollment_id;
+
+  if (enrollmentId) {
+    const enrollmentIndex = enrollmentRows.findIndex((row) => row.enrollment_id === enrollmentId);
+    if (enrollmentIndex !== -1) {
+      const currentEnrollment = enrollmentRows[enrollmentIndex];
+      const updatedEnrollment: EnrollmentRecord = {
+        ...currentEnrollment,
+        course_id: `COURSE-${input.selectedCourse.replaceAll(" ", "-").toUpperCase()}`,
+        course_name: input.selectedCourse,
+        status: input.enrollmentStatus,
+        fee_status: input.feeStatus,
+        course_completed: input.courseCompleted.toUpperCase() === "TRUE" ? "TRUE" : "FALSE",
+        notes: input.notes,
+      };
+
+      await updateRow(
+        SHEET_TABS.enrollments,
+        enrollmentIndex + 1,
+        ENROLLMENT_HEADERS.map((header) => updatedEnrollment[header]),
+      );
+    }
+  }
+
+  return {
+    studentId: updatedStudent.student_id,
+    registrationNo: updatedStudent.registration_no,
+  };
+}
+
+export async function deleteAdminStudent(studentId: string) {
+  await ensurePortalSheetsSetup();
+
+  const [studentsRaw, enrollmentsRaw, certificatesRaw, paymentsRaw] = await Promise.all([
+    getRows(SHEET_TABS.students),
+    getRows(SHEET_TABS.enrollments),
+    getRows(SHEET_TABS.certificates),
+    getRows(SHEET_TABS.payments),
+  ]);
+
+  const studentRows = mapRowsToObjects(STUDENT_HEADERS, studentsRaw.slice(1));
+  const enrollmentRows = mapRowsToObjects(ENROLLMENT_HEADERS, enrollmentsRaw.slice(1));
+  const certificateRows = mapRowsToObjects(CERTIFICATE_HEADERS, certificatesRaw.slice(1));
+  const paymentRows = mapRowsToObjects(PAYMENT_HEADERS, paymentsRaw.slice(1));
+
+  const studentIndex = studentRows.findIndex((row) => row.student_id === studentId);
+  if (studentIndex === -1) {
+    throw new Error("Student record could not be found.");
+  }
+
+  const relatedEnrollmentIds = enrollmentRows
+    .filter((row) => row.student_id === studentId)
+    .map((row) => row.enrollment_id);
+
+  const enrollmentIndexes = enrollmentRows
+    .map((row, index) => ({ row, index }))
+    .filter(({ row }) => row.student_id === studentId)
+    .map(({ index }) => index + 1);
+
+  const certificateIndexes = certificateRows
+    .map((row, index) => ({ row, index }))
+    .filter(
+      ({ row }) =>
+        row.student_id === studentId || relatedEnrollmentIds.includes(row.enrollment_id),
+    )
+    .map(({ index }) => index + 1);
+
+  const paymentIndexes = paymentRows
+    .map((row, index) => ({ row, index }))
+    .filter(
+      ({ row }) =>
+        row.student_id === studentId || relatedEnrollmentIds.includes(row.enrollment_id),
+    )
+    .map(({ index }) => index + 1);
+
+  await deleteSheetRows(SHEET_TABS.payments, paymentIndexes);
+  await deleteSheetRows(SHEET_TABS.certificates, certificateIndexes);
+  await deleteSheetRows(SHEET_TABS.enrollments, enrollmentIndexes);
+  await deleteSheetRows(SHEET_TABS.students, [studentIndex + 1]);
 }
 
 export async function getCertificateWorkspace() {

@@ -1,8 +1,8 @@
 import Link from "next/link";
+import { AdminMenuTrigger } from "@/components/admin/admin-side-panel";
 import { notFound } from "next/navigation";
 import { PrintButton } from "@/components/print-button";
 import { requireAdminUser } from "@/lib/auth";
-import { INSTITUTE_NAME } from "@/lib/constants";
 import { getCertificateById } from "@/lib/google-sheets";
 
 export const dynamic = "force-dynamic";
@@ -12,9 +12,19 @@ export default async function CertificatePrintPage({
 }: {
   params: Promise<{ certificateId: string }>;
 }) {
-  await requireAdminUser();
+  const user = await requireAdminUser();
   const { certificateId } = await params;
   const certificate = await getCertificateById(certificateId);
+  const userMetadata = user.user_metadata as Record<string, string | undefined>;
+  const adminName =
+    userMetadata.full_name ??
+    userMetadata.name ??
+    user.email?.split("@")[0] ??
+    "Admin";
+  const adminImageUrl =
+    userMetadata.avatar_url ??
+    userMetadata.picture ??
+    null;
 
   if (!certificate) {
     notFound();
@@ -40,7 +50,12 @@ export default async function CertificatePrintPage({
             </h1>
           </div>
 
-          <div className="flex flex-col gap-3 sm:flex-row">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <AdminMenuTrigger
+              adminEmail={user.email ?? ""}
+              adminName={adminName}
+              adminImageUrl={adminImageUrl}
+            />
             <Link className="secondary-button w-fit" href="/admin/certificates">
               Back to Certificates
             </Link>

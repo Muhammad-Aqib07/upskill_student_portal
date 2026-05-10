@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { LogoutButton } from "@/components/auth/logout-button";
+import { AdminDashboardShell } from "@/components/admin/admin-dashboard-shell";
 import { requireAdminUser } from "@/lib/auth";
 import { INSTITUTE_NAME } from "@/lib/constants";
 import { getAdminDashboardData } from "@/lib/google-sheets";
@@ -10,38 +10,27 @@ export const dynamic = "force-dynamic";
 export default async function AdminDashboardPage() {
   const user = await requireAdminUser();
   const dashboard = await getAdminDashboardData();
+  const userMetadata = user.user_metadata as Record<string, string | undefined>;
+  const adminName =
+    userMetadata.full_name ??
+    userMetadata.name ??
+    user.email?.split("@")[0] ??
+    "Admin";
+  const adminImageUrl =
+    userMetadata.avatar_url ??
+    userMetadata.picture ??
+    null;
 
   return (
     <main className="panel-shell">
       <div className="mx-auto max-w-7xl px-6 py-8 lg:px-10 lg:py-10">
         <section className="premium-card rounded-[36px] p-6 lg:p-8">
           <div className="flex flex-col gap-8">
-            <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
-              <div className="max-w-4xl">
-                <div className="brand-badge w-fit">
-                  <span className="brand-orb" />
-                  Admin control center
-                </div>
-                <h1 className="mt-5 text-4xl font-semibold tracking-[-0.04em] lg:text-5xl">
-                  Manage {INSTITUTE_NAME} from one polished command surface.
-                </h1>
-                <p className="section-copy mt-4 max-w-3xl text-base">
-                  Signed in as {user.email}. Admissions, certificates, and live
-                  records are now presented in a tighter, more premium admin
-                  experience without changing any underlying workflows.
-                </p>
-              </div>
-
-              <div className="flex flex-col gap-3 sm:flex-row xl:flex-col">
-                <Link className="primary-button w-fit" href="/admin/students">
-                  Manage Students
-                </Link>
-                <Link className="secondary-button w-fit" href="/admin/certificates">
-                  Manage Certificates
-                </Link>
-                <LogoutButton redirectTo="/admin/login" />
-              </div>
-            </div>
+            <AdminDashboardShell
+              adminEmail={user.email ?? ""}
+              adminName={adminName}
+              adminImageUrl={adminImageUrl}
+            />
 
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {dashboard.stats.map((stat) => (
@@ -58,16 +47,20 @@ export default async function AdminDashboardPage() {
 
         <div className="mt-6 grid gap-6 xl:grid-cols-[1.12fr_0.88fr]">
           <section className="glass-card rounded-[32px] p-8">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-              <div>
-                <p className="section-kicker">Certificate Activity</p>
-                <h2 className="mt-3 text-2xl font-semibold tracking-tight">
-                  Recent certificate actions
-                </h2>
-              </div>
-              <Link className="primary-button w-fit" href="/admin/certificates">
-                Generate Certificate
-              </Link>
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                  <p className="section-kicker">Certificate Activity</p>
+                  <h2 className="mt-3 text-2xl font-semibold tracking-tight">
+                    Recent certificate actions
+                  </h2>
+                  <p className="section-copy mt-3 text-sm">
+                    {INSTITUTE_NAME} activity updates remain available here while
+                    the profile menu gives faster access to your main admin tabs.
+                  </p>
+                </div>
+                <Link className="primary-button w-fit" href="/admin/certificates">
+                  Generate Certificate
+                </Link>
             </div>
 
             <div className="table-wrap mt-6">
@@ -92,7 +85,12 @@ export default async function AdminDashboardPage() {
                   {dashboard.recentCertificates.map((record) => (
                     <tr key={record.certificateId}>
                       <td>
-                        <p className="font-semibold">{record.studentName}</p>
+                        <Link
+                          className="font-semibold text-sky-300 transition-colors hover:text-sky-200"
+                          href={`/admin/students?tab=edit&studentId=${record.studentId}`}
+                        >
+                          {record.studentName}
+                        </Link>
                       </td>
                       <td>{record.course}</td>
                       <td>{record.certificateId}</td>

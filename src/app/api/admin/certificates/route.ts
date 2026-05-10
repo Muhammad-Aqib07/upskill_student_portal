@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
-import { createCertificateRecord } from "@/lib/google-sheets";
 
 export async function POST(request: Request) {
   try {
-    console.log("POST /api/admin/certificates hit");
+    const { createCertificateRecord } = await import("@/lib/google-sheets");
     const formData = await request.formData();
 
     const studentId = String(formData.get("studentId") ?? "").trim();

@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { createStudentRegistration } from "@/lib/google-sheets";
 import { courses } from "@/lib/portal-data";
 import {
   UploadValidationError,
@@ -10,6 +9,7 @@ export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   try {
+    const { createStudentRegistration } = await import("@/lib/google-sheets");
     const formData = await request.formData();
 
     const authUserId = String(formData.get("authUserId") ?? "").trim();

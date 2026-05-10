@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { updateStudentProfile } from "@/lib/google-sheets";
 import { requireStudentUser } from "@/lib/auth";
 
 export async function PATCH(request: Request) {
   try {
+    const { updateStudentProfile } = await import("@/lib/google-sheets");
     const user = await requireStudentUser();
     const { studentId, updates } = await request.json();
 
