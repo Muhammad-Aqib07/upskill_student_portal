@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { getAllowedAdminEmails, isAuthBypassed } from "@/lib/env";
+import { isAuthBypassed } from "@/lib/env";
 import { updateSession } from "@/lib/supabase/middleware";
 
 export async function middleware(request: NextRequest) {
@@ -8,67 +8,24 @@ export async function middleware(request: NextRequest) {
       return NextResponse.next();
     }
 
-    const { supabase, response } = updateSession(request);
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
     const pathname = request.nextUrl.pathname;
 
-    // Skip middleware logic for auth callback and public pages
-    if (pathname.startsWith("/auth/callback") || pathname === "/") {
+    // Restrict middleware work to the auth callback where cookie/session writes matter.
+    // Route protection is enforced by server-side auth guards in pages and API handlers.
+    if (pathname.startsWith("/auth/callback")) {
+      const { response } = updateSession(request);
       return response;
     }
 
-    const isStudentProtected =
-      pathname.startsWith("/student/dashboard") || pathname.startsWith("/student/profile");
-    const isAdminProtected =
-      pathname.startsWith("/admin/dashboard") ||
-      pathname.startsWith("/admin/certificates") ||
-      pathname.startsWith("/admin/students");
-
-    if (isStudentProtected) {
-      if (!user) {
-        const url = request.nextUrl.clone();
-        url.pathname = "/student/login";
-        url.searchParams.set("error", "student-auth-required");
-        return NextResponse.redirect(url);
-      }
-
-      const email = user.email?.toLowerCase() ?? "";
-      if (getAllowedAdminEmails().includes(email)) {
-        // Prevent admin from opening student portal
-        const url = request.nextUrl.clone();
-        url.pathname = "/admin/dashboard";
-        url.searchParams.set("error", "admin-restricted-from-student-portal");
-        return NextResponse.redirect(url);
-      }
-    }
-
-    if (isAdminProtected) {
-      const email = user?.email?.toLowerCase() ?? "";
-      const isAllowed = getAllowedAdminEmails().includes(email);
-
-      if (!user || !isAllowed) {
-        const url = request.nextUrl.clone();
-        url.pathname = "/admin/login";
-        url.searchParams.set("error", !user ? "admin-auth-required" : "admin-not-allowed");
-        return NextResponse.redirect(url);
-      }
-    }
-
-    return response;
+    return NextResponse.next();
   } catch (error) {
     console.error("Middleware invocation failed:", error);
-    
-    // In case of error, redirect to a safe page or return an error response
-    // to prevent the 500 INTERNAL_SERVER_ERROR crash page on Vercel.
-    const url = request.nextUrl.clone();
-    url.pathname = "/";
-    return NextResponse.redirect(url);
+
+    // Fail open here and let server-side auth guards handle route protection.
+    return NextResponse.next();
   }
 }
 
 export const config = {
-  matcher: ["/student/:path*", "/admin/:path*", "/auth/callback"],
+  matcher: ["/auth/callback"],
 };
