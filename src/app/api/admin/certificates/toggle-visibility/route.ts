@@ -1,14 +1,25 @@
 import { NextResponse } from "next/server";
 import { requireAdminUser } from "@/lib/auth";
+import {
+  canManagePublicCertificates,
+  getPublicCertificateRestrictionMessage,
+} from "@/lib/env";
 
 export async function POST(request: Request) {
   try {
     const { toggleCertificateVisibility } = await import("@/lib/google-sheets");
-    await requireAdminUser();
+    const user = await requireAdminUser();
     const { certificateId } = await request.json();
 
     if (!certificateId) {
       return NextResponse.json({ error: "Certificate ID is required" }, { status: 400 });
+    }
+
+    if (!canManagePublicCertificates(user.email ?? "")) {
+      return NextResponse.json(
+        { error: getPublicCertificateRestrictionMessage() },
+        { status: 403 },
+      );
     }
 
     const newValue = await toggleCertificateVisibility(certificateId);

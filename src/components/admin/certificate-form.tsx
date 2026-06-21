@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { INSTITUTE_NAME } from "@/lib/constants";
+import { useMemo, useState } from "react";
 
 type EnrollmentOption = {
   enrollmentId: string;
@@ -17,18 +16,23 @@ type EnrollmentOption = {
 
 export function CertificateForm({
   enrollments,
+  canManagePublicVisibility = true,
+  publicRestrictionMessage = "Please contact admin.",
 }: {
   enrollments: EnrollmentOption[];
+  canManagePublicVisibility?: boolean;
+  publicRestrictionMessage?: string;
 }) {
+  const initialEnrollment = enrollments[0] ?? null;
   const [selectedEnrollmentId, setSelectedEnrollmentId] = useState(
-    enrollments[0]?.enrollmentId ?? "",
+    initialEnrollment?.enrollmentId ?? "",
   );
   
   // Editable fields state
-  const [studentName, setStudentName] = useState("");
-  const [fatherName, setFatherName] = useState("");
-  const [courseName, setCourseName] = useState("");
-  const [enrollmentStatus, setEnrollmentStatus] = useState("");
+  const [studentName, setStudentName] = useState(initialEnrollment?.studentName ?? "");
+  const [fatherName, setFatherName] = useState(initialEnrollment?.fatherName ?? "");
+  const [courseName, setCourseName] = useState(initialEnrollment?.courseName ?? "");
+  const [enrollmentStatus, setEnrollmentStatus] = useState(initialEnrollment?.status ?? "");
 
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -39,15 +43,19 @@ export function CertificateForm({
     [enrollments, selectedEnrollmentId],
   );
 
-  // Sync state when selection changes
-  useEffect(() => {
-    if (selectedEnrollment) {
-      setStudentName(selectedEnrollment.studentName);
-      setFatherName(selectedEnrollment.fatherName || "");
-      setCourseName(selectedEnrollment.courseName);
-      setEnrollmentStatus(selectedEnrollment.status);
+  function handleEnrollmentChange(enrollmentId: string) {
+    setSelectedEnrollmentId(enrollmentId);
+
+    const enrollment = enrollments.find((item) => item.enrollmentId === enrollmentId);
+    if (!enrollment) {
+      return;
     }
-  }, [selectedEnrollment]);
+
+    setStudentName(enrollment.studentName);
+    setFatherName(enrollment.fatherName || "");
+    setCourseName(enrollment.courseName);
+    setEnrollmentStatus(enrollment.status);
+  }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -83,7 +91,7 @@ export function CertificateForm({
       `Certificate ${result.certificateCode} created successfully. Opening in a new tab...`,
     );
     form.reset();
-    setSelectedEnrollmentId(enrollments[0]?.enrollmentId ?? "");
+    handleEnrollmentChange(enrollments[0]?.enrollmentId ?? "");
   }
 
   return (
@@ -110,7 +118,7 @@ export function CertificateForm({
             id="enrollmentId"
             name="enrollmentId"
             value={selectedEnrollmentId}
-            onChange={(event) => setSelectedEnrollmentId(event.target.value)}
+            onChange={(event) => handleEnrollmentChange(event.target.value)}
           >
             {enrollments.map((item) => (
               <option key={item.enrollmentId} value={item.enrollmentId}>
@@ -261,12 +269,15 @@ export function CertificateForm({
                 name="publicVisible"
                 type="checkbox"
                 value="TRUE"
-                defaultChecked
+                defaultChecked={canManagePublicVisibility}
+                disabled={!canManagePublicVisibility}
               />
               <div>
                 <p className="font-semibold">Publish to public verification</p>
                 <p className="mt-1 text-[var(--muted)] text-xs">
-                  Check this box to publish the certificate on the public verification page.
+                  {canManagePublicVisibility
+                    ? "Check this box to publish the certificate on the public verification page."
+                    : publicRestrictionMessage}
                 </p>
               </div>
             </div>

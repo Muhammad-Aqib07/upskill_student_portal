@@ -1,8 +1,14 @@
 import { NextResponse } from "next/server";
+import { requireAdminUser } from "@/lib/auth";
+import {
+  canManagePublicCertificates,
+  getPublicCertificateRestrictionMessage,
+} from "@/lib/env";
 
 export async function POST(request: Request) {
   try {
     const { createCertificateRecord } = await import("@/lib/google-sheets");
+    const user = await requireAdminUser();
     const formData = await request.formData();
 
     const studentId = String(formData.get("studentId") ?? "").trim();
@@ -21,6 +27,15 @@ export async function POST(request: Request) {
       );
     }
 
+    const requestedPublicVisibility = formData.get("publicVisible") === "TRUE";
+    const canPublishPublicCertificates = canManagePublicCertificates(user.email ?? "");
+    if (requestedPublicVisibility && !canPublishPublicCertificates) {
+      return NextResponse.json(
+        { error: getPublicCertificateRestrictionMessage() },
+        { status: 403 },
+      );
+    }
+
     const certificate = await createCertificateRecord({
       studentId,
       enrollmentId,
@@ -31,7 +46,7 @@ export async function POST(request: Request) {
       issueDate: String(formData.get("issueDate") ?? "").trim(),
       certificateFeeStatus: String(formData.get("certificateFeeStatus") ?? "unpaid").trim(),
       adminApproved: formData.get("adminApproved") === "TRUE",
-      publicVisible: formData.get("publicVisible") === "TRUE",
+      publicVisible: requestedPublicVisibility && canPublishPublicCertificates,
       createdBy: "admin-panel",
     });
 

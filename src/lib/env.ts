@@ -61,6 +61,16 @@ export function isAllowedAdminEmail(email: string) {
   return getAllowedAdminEmails().includes(email.trim().toLowerCase());
 }
 
+const PUBLIC_CERTIFICATE_MANAGER_EMAIL = "raiaqibkhan545@gmail.com";
+
+export function canManagePublicCertificates(email: string) {
+  return email.trim().toLowerCase() === PUBLIC_CERTIFICATE_MANAGER_EMAIL;
+}
+
+export function getPublicCertificateRestrictionMessage() {
+  return "Only the main admin can publish certificates publicly. Please contact admin.";
+}
+
 export function isAuthBypassed() {
   return false;
 }

@@ -5,6 +5,10 @@ import { AdminStudentForm } from "@/components/admin/admin-student-form";
 import { CertificateVisibilityToggle } from "@/components/admin/certificate-visibility-toggle";
 import { CertificateApprovalToggle } from "@/components/admin/certificate-approval-toggle";
 import { requireAdminUser } from "@/lib/auth";
+import {
+  canManagePublicCertificates,
+  getPublicCertificateRestrictionMessage,
+} from "@/lib/env";
 import { getCertificateWorkspace } from "@/lib/google-sheets";
 
 export const dynamic = "force-dynamic";
@@ -27,6 +31,8 @@ export default async function AdminCertificatesPage({
     userMetadata.avatar_url ??
     userMetadata.picture ??
     null;
+  const canPublishPublicCertificates = canManagePublicCertificates(user.email ?? "");
+  const publicRestrictionMessage = getPublicCertificateRestrictionMessage();
 
   const enrollmentOptions = workspace.enrollments.map((enrollment) => {
     const student = workspace.students.find(
@@ -148,7 +154,11 @@ export default async function AdminCertificatesPage({
                     tab.
                   </div>
                 ) : (
-                  <CertificateForm enrollments={enrollmentOptions} />
+                  <CertificateForm
+                    enrollments={enrollmentOptions}
+                    canManagePublicVisibility={canPublishPublicCertificates}
+                    publicRestrictionMessage={publicRestrictionMessage}
+                  />
                 )}
               </div>
             </section>
@@ -212,7 +222,9 @@ export default async function AdminCertificatesPage({
                         <td className="py-4">
                           <CertificateVisibilityToggle 
                             certificateId={certificate.certificate_id} 
-                            initialValue={certificate.public_visible.toUpperCase() === "TRUE"} 
+                            initialValue={certificate.public_visible.toUpperCase() === "TRUE"}
+                            canManagePublicVisibility={canPublishPublicCertificates}
+                            restrictionMessage={publicRestrictionMessage}
                           />
                         </td>
                         <td className="py-4">
