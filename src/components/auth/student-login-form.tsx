@@ -4,6 +4,21 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useState, useTransition } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
+function getReadableAuthError(error: unknown) {
+  const message =
+    error instanceof Error ? error.message : typeof error === "string" ? error : "";
+
+  if (message.includes("Failed to fetch")) {
+    return "Authentication service could not be reached. Check your internet connection and confirm NEXT_PUBLIC_SUPABASE_URL points to a live Supabase project.";
+  }
+
+  if (message.includes("Database error")) {
+    return "This email account is in a corrupted state. Please completely delete the user in the Supabase Dashboard, or try a different email address.";
+  }
+
+  return message || "Authentication failed. Please try again.";
+}
+
 export function StudentLoginForm() {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -20,22 +35,25 @@ export function StudentLoginForm() {
     event.preventDefault();
     setError(null);
 
-    const supabase = createSupabaseBrowserClient();
-    
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      const supabase = createSupabaseBrowserClient();
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    if (signInError) {
-      setError(signInError.message);
-      return;
+      if (signInError) {
+        setError(getReadableAuthError(signInError));
+        return;
+      }
+
+      startTransition(() => {
+        router.push("/student/dashboard");
+        router.refresh();
+      });
+    } catch (error) {
+      setError(getReadableAuthError(error));
     }
-
-    startTransition(() => {
-      router.push("/student/dashboard");
-      router.refresh();
-    });
   }
 
   async function handleSendOtp(event: FormEvent<HTMLFormElement>) {
@@ -43,70 +61,72 @@ export function StudentLoginForm() {
     setError(null);
     setMessage(null);
 
-    const supabase = createSupabaseBrowserClient();
-    
-    const { error: otpError } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        shouldCreateUser: true,
+    try {
+      const supabase = createSupabaseBrowserClient();
+      const { error: otpError } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          shouldCreateUser: true,
+        }
+      });
+
+      if (otpError) {
+        setError(getReadableAuthError(otpError));
+        return;
       }
-    });
 
-    if (otpError) {
-      setError(
-        otpError.message.includes("Database error")
-          ? "This email account is in a corrupted state. Please completely delete the user in the Supabase Dashboard, or try a different email address."
-          : otpError.message
-      );
-      return;
+      setOtpStep("otp");
+      setMessage("A 6-digit verification code has been sent to your email. (Please check your spam folder if you don't see it).");
+    } catch (error) {
+      setError(getReadableAuthError(error));
     }
-
-    setOtpStep("otp");
-    setMessage("A 6-digit verification code has been sent to your email. (Please check your spam folder if you don't see it).");
   }
 
   async function handleVerifyOtp(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
 
-    const supabase = createSupabaseBrowserClient();
-    
-    const { error: verifyError } = await supabase.auth.verifyOtp({
-      email,
-      token: otpCode,
-      type: "email",
-    });
+    try {
+      const supabase = createSupabaseBrowserClient();
+      const { error: verifyError } = await supabase.auth.verifyOtp({
+        email,
+        token: otpCode,
+        type: "email",
+      });
 
-    if (verifyError) {
-      setError(
-        verifyError.message.includes("Database error")
-          ? "This email account is in a corrupted state. Please completely delete the user in the Supabase Dashboard, or try a different email address."
-          : verifyError.message
-      );
-      return;
+      if (verifyError) {
+        setError(getReadableAuthError(verifyError));
+        return;
+      }
+
+      startTransition(() => {
+        router.push("/student/register");
+        router.refresh();
+      });
+    } catch (error) {
+      setError(getReadableAuthError(error));
     }
-
-    startTransition(() => {
-      router.push("/student/register");
-      router.refresh();
-    });
   }
 
   async function handleGoogleLogin() {
     setError(null);
 
-    const supabase = createSupabaseBrowserClient();
-    const redirectTo = `${window.location.origin}/auth/callback?next=/student/dashboard`;
+    try {
+      const supabase = createSupabaseBrowserClient();
+      const redirectTo = `${window.location.origin}/auth/callback?next=/student/dashboard`;
 
-    const { error: oauthError } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo,
-      },
-    });
+      const { error: oauthError } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo,
+        },
+      });
 
-    if (oauthError) {
-      setError(oauthError.message);
+      if (oauthError) {
+        setError(getReadableAuthError(oauthError));
+      }
+    } catch (error) {
+      setError(getReadableAuthError(error));
     }
   }
 

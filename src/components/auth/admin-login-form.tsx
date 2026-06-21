@@ -4,6 +4,17 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useState, useTransition } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
+function getReadableAuthError(error: unknown) {
+  const message =
+    error instanceof Error ? error.message : typeof error === "string" ? error : "";
+
+  if (message.includes("Failed to fetch")) {
+    return "Authentication service could not be reached. Check your internet connection and confirm NEXT_PUBLIC_SUPABASE_URL points to a live Supabase project.";
+  }
+
+  return message || "Authentication failed. Please try again.";
+}
+
 export function AdminLoginForm() {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -15,38 +26,46 @@ export function AdminLoginForm() {
     event.preventDefault();
     setError(null);
 
-    const supabase = createSupabaseBrowserClient();
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      const supabase = createSupabaseBrowserClient();
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    if (signInError) {
-      setError(signInError.message);
-      return;
+      if (signInError) {
+        setError(getReadableAuthError(signInError));
+        return;
+      }
+
+      startTransition(() => {
+        router.push("/admin/dashboard");
+        router.refresh();
+      });
+    } catch (error) {
+      setError(getReadableAuthError(error));
     }
-
-    startTransition(() => {
-      router.push("/admin/dashboard");
-      router.refresh();
-    });
   }
 
   async function handleGoogleLogin() {
     setError(null);
 
-    const supabase = createSupabaseBrowserClient();
-    const redirectTo = `${window.location.origin}/auth/callback?next=/admin/dashboard`;
+    try {
+      const supabase = createSupabaseBrowserClient();
+      const redirectTo = `${window.location.origin}/auth/callback?next=/admin/dashboard`;
 
-    const { error: oauthError } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo,
-      },
-    });
+      const { error: oauthError } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo,
+        },
+      });
 
-    if (oauthError) {
-      setError(oauthError.message);
+      if (oauthError) {
+        setError(getReadableAuthError(oauthError));
+      }
+    } catch (error) {
+      setError(getReadableAuthError(error));
     }
   }
 
